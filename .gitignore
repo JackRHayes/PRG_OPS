@@ -1,0 +1,21 @@
+# Secrets & credentials
+credentials.json
+token.pickle
+config.json
+
+# Python cache
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Outputs & cache
+outputs/.cache.pkl
+
+# Models
+models/*.pkl
+
+# Test files
+test.pdf
+test_sheet.csv
