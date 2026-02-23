@@ -10,12 +10,19 @@ __pycache__/
 # macOS
 .DS_Store
 
-# Outputs & cache
-outputs/.cache.pkl
+# Generated outputs
+outputs/
+logs/
+high_risk_jobs.csv
+contractor_scorecards.csv
+weekly_ops_summary.txt
 
-# Models
-models/*.pkl
+# Models (trained)
+models/
 
 # Test files
 test.pdf
 test_sheet.csv
+
+# Editor backups
+*.save
