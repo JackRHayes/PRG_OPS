@@ -1,0 +1,16 @@
+job_id,contractor,scope_type,region,start_date,planned_end_date,actual_end_date,status,markout_required,markout_issues,inspections_failed,crew_type
+JOB-001,Apex Utilities,Gas Main Replacement,Northeast,2025-11-01,2025-11-30,2025-12-18,Completed,Yes,2,1,Union
+JOB-002,BlueLine Contractors,Fiber Install,Southeast,2025-12-01,2025-12-20,,In Progress,Yes,0,0,Non-Union
+JOB-003,Apex Utilities,Water Line Repair,Northwest,2025-11-15,2025-11-25,2025-12-10,Completed,No,1,2,Union
+JOB-004,Crestview Civil,Road Restoration,Southwest,2026-01-05,2026-01-25,,Open,Yes,3,2,Union
+JOB-005,BlueLine Contractors,Electric Underground,Northeast,2025-12-10,2026-01-10,,In Progress,Yes,1,0,Non-Union
+JOB-006,Redstone Inc,Gas Main Replacement,Southeast,2026-01-12,2026-02-01,,Open,Yes,0,1,Union
+JOB-007,Crestview Civil,Sewer Repair,Northwest,2025-10-20,2025-11-05,2025-11-20,Completed,No,0,0,Non-Union
+JOB-008,Apex Utilities,Fiber Install,Southwest,2026-01-20,2026-02-15,,In Progress,Yes,2,3,Union
+JOB-009,Redstone Inc,Water Line Repair,Northeast,2025-12-05,2025-12-20,2026-01-08,Completed,Yes,1,1,Non-Union
+JOB-010,BlueLine Contractors,Road Restoration,Southeast,2026-01-08,2026-01-30,,Open,No,4,2,Union
+JOB-011,Apex Utilities,Electric Underground,Northwest,2026-02-01,2026-02-20,,In Progress,Yes,0,0,Union
+JOB-012,Crestview Civil,Gas Main Replacement,Southwest,2025-11-10,2025-12-01,2025-12-22,Completed,Yes,2,1,Non-Union
+JOB-013,Redstone Inc,Sewer Repair,Northeast,2026-01-15,2026-02-10,,Open,Yes,3,2,Union
+JOB-014,BlueLine Contractors,Water Line Repair,Southeast,2026-01-25,2026-02-18,,In Progress,No,1,0,Non-Union
+JOB-015,Apex Utilities,Road Restoration,Northwest,2025-12-15,2026-01-05,2026-01-28,Completed,Yes,0,0,Union

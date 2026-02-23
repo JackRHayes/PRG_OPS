@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>PRG Risk Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0c0f;--surface:#111318;--border:#1e2330;--text:#e8eaf0;--muted:#5a6070;--accent:#e8c547;--red:#ff4757;--amber:#ffa502;--green:#2ed573;--blue:#1e90ff;--font-display:'Syne',sans-serif;--font-mono:'DM Mono',monospace}
+body{background:var(--bg);color:var(--text);font-family:var(--font-display);min-height:100vh;overflow-x:hidden}
+
+/* UPLOAD */
+#upload-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(232,197,71,.08) 0%,transparent 60%),var(--bg)}
+.logo{font-size:.7rem;font-family:var(--font-mono);letter-spacing:.3em;color:var(--accent);text-transform:uppercase;margin-bottom:1.5rem;opacity:.8}
+.hero-title{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;line-height:1.05;text-align:center;margin-bottom:.75rem;letter-spacing:-.02em}
+.hero-title span{color:var(--accent)}
+.hero-sub{font-family:var(--font-mono);font-size:.85rem;color:var(--muted);text-align:center;margin-bottom:3rem;letter-spacing:.05em}
+.upload-zone{width:100%;max-width:520px;border:1.5px dashed var(--border);border-radius:12px;padding:3rem 2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface)}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(232,197,71,.04)}
+.upload-icon{font-size:2.5rem;margin-bottom:1rem;display:block}
+.upload-zone h3{font-size:1.1rem;font-weight:600;margin-bottom:.4rem}
+.upload-zone p{font-family:var(--font-mono);font-size:.75rem;color:var(--muted)}
+#file-input{display:none}
+.optional-uploads{width:100%;max-width:520px;margin-top:1rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem}
+.opt-upload{border:1px dashed var(--border);border-radius:8px;padding:.75rem 1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface)}
+.opt-upload:hover{border-color:var(--blue)}
+.opt-upload p{font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-bottom:.2rem;letter-spacing:.05em;text-transform:uppercase}
+.opt-upload span{font-family:var(--font-mono);font-size:.68rem;color:var(--blue)}
+.opt-upload.loaded{border-color:var(--green)}
+.opt-upload.loaded span{color:var(--green)}
+#rfi-input,#sub-input,#permit-input{display:none}
+.btn-sample{margin-top:1.5rem;background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:.75rem;padding:.6rem 1.2rem;border-radius:6px;cursor:pointer;transition:all .2s;letter-spacing:.05em}
+.btn-sample:hover{border-color:var(--accent);color:var(--accent)}
+.loading-bar{display:none;width:100%;max-width:520px;margin-top:1.5rem;height:2px;background:var(--border);border-radius:2px;overflow:hidden}
+.loading-bar.active{display:block}
+.loading-bar::after{content:'';display:block;height:100%;width:40%;background:var(--accent);animation:slide 1s infinite ease-in-out}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+
+/* DASHBOARD */
+#dashboard{display:none}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:100}
+.topbar-logo{font-size:.65rem;font-family:var(--font-mono);letter-spacing:.25em;color:var(--accent);text-transform:uppercase}
+.topbar-title{font-weight:700;font-size:1rem}
+.btn-reset{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:.7rem;padding:.4rem .9rem;border-radius:5px;cursor:pointer;transition:all .2s}
+.btn-reset:hover{border-color:var(--red);color:var(--red)}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);padding:0 2rem;overflow-x:auto}
+.tab{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;padding:.9rem 1.2rem;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.content{padding:2rem;max-width:1400px;margin:0 auto}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:2rem}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-card.red::before{background:var(--red)}.kpi-card.amber::before{background:var(--amber)}.kpi-card.green::before{background:var(--green)}.kpi-card.blue::before{background:var(--blue)}.kpi-card.accent::before{background:var(--accent)}
+.kpi-label{font-family:var(--font-mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.kpi-value{font-size:2rem;font-weight:800;line-height:1;letter-spacing:-.02em}
+.kpi-card.red .kpi-value{color:var(--red)}.kpi-card.amber .kpi-value{color:var(--amber)}.kpi-card.green .kpi-value{color:var(--green)}.kpi-card.blue .kpi-value{color:var(--blue)}.kpi-card.accent .kpi-value{color:var(--accent)}
+.kpi-sub{font-family:var(--font-mono);font-size:.65rem;color:var(--muted);margin-top:.3rem}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem}
+.chart-title{font-family:var(--font-mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:1.25rem}
+.chart-wrap{position:relative;height:220px}
+
+/* TABLES */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.section-title{font-size:1rem;font-weight:700}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:2rem}
+.filter-bar{display:flex;gap:.5rem;padding:1rem 1.25rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.filter-btn{font-family:var(--font-mono);font-size:.65rem;letter-spacing:.08em;padding:.35rem .75rem;border-radius:5px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;transition:all .15s}
+.filter-btn:hover{color:var(--text);border-color:var(--text)}
+.filter-btn.active-all{border-color:var(--text);color:var(--text)}
+.filter-btn.active-high{border-color:var(--red);color:var(--red);background:rgba(255,71,87,.08)}
+.filter-btn.active-medium{border-color:var(--amber);color:var(--amber);background:rgba(255,165,2,.08)}
+.filter-btn.active-low{border-color:var(--green);color:var(--green);background:rgba(46,213,115,.08)}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid var(--border)}
+th{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:.75rem 1.25rem;text-align:left;white-space:nowrap}
+td{font-family:var(--font-mono);font-size:.75rem;padding:.85rem 1.25rem;border-bottom:1px solid rgba(30,35,48,.6);vertical-align:middle;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+.risk-pill{display:inline-block;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;padding:.2rem .6rem;border-radius:3px;font-weight:500}
+.risk-HIGH{background:rgba(255,71,87,.15);color:var(--red)}.risk-MEDIUM{background:rgba(255,165,2,.15);color:var(--amber)}.risk-LOW{background:rgba(46,213,115,.15);color:var(--green)}
+.status-pill{display:inline-block;font-family:var(--font-mono);font-size:.6rem;padding:.2rem .6rem;border-radius:3px}
+.s-approved{background:rgba(46,213,115,.15);color:var(--green)}
+.s-pending{background:rgba(255,165,2,.15);color:var(--amber)}
+.s-blocked{background:rgba(255,71,87,.15);color:var(--red)}
+.s-expired{background:rgba(90,96,112,.2);color:var(--muted)}
+.s-open{background:rgba(255,71,87,.15);color:var(--red)}
+.s-answered{background:rgba(46,213,115,.15);color:var(--green)}
+.warn-tag{font-family:var(--font-mono);font-size:.58rem;background:rgba(255,71,87,.15);color:var(--red);padding:.15rem .4rem;border-radius:3px;margin-left:.3rem}
+.amber-tag{font-family:var(--font-mono);font-size:.58rem;background:rgba(255,165,2,.15);color:var(--amber);padding:.15rem .4rem;border-radius:3px;margin-left:.3rem}
+.score-bar-wrap{display:flex;align-items:center;gap:.5rem}
+.score-bar{height:4px;border-radius:2px;background:var(--border);flex:1;min-width:60px}
+.score-bar-fill{height:100%;border-radius:2px;transition:width .3s}
+.score-num{font-size:.7rem;color:var(--muted);min-width:36px;text-align:right}
+.reasons-text{font-size:.68rem;color:var(--muted);max-width:280px;white-space:normal;line-height:1.4}
+
+/* CONTRACTOR */
+.contractor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+.contractor-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;position:relative;transition:border-color .2s}
+.contractor-card:hover{border-color:rgba(232,197,71,.3)}
+.contractor-rank{position:absolute;top:1.25rem;right:1.25rem;font-family:var(--font-mono);font-size:.65rem;color:var(--muted)}
+.contractor-name{font-size:1rem;font-weight:700;margin-bottom:1rem;padding-right:2rem;line-height:1.3}
+.contractor-stats{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.stat-label{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.2rem}
+.stat-value{font-family:var(--font-mono);font-size:.9rem;font-weight:500}
+.risk-meter{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+.risk-meter-label{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.62rem;color:var(--muted);margin-bottom:.4rem}
+.risk-meter-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.risk-meter-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),var(--amber),var(--red));transition:width .4s ease}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem}
+@media(max-width:768px){.two-col{grid-template-columns:1fr}}
+.no-data{text-align:center;padding:3rem 2rem;color:var(--muted);font-family:var(--font-mono);font-size:.8rem;border:1px dashed var(--border);border-radius:10px;margin-bottom:2rem}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- UPLOAD -->
+<div id="upload-screen">
+  <div class="logo">PRG Group · Operations Intelligence</div>
+  <h1 class="hero-title">Job Risk &<br><span>Delay Intel</span></h1>
+  <p class="hero-sub">Upload your job data → get instant risk visibility</p>
+  <div class="upload-zone" id="upload-zone">
+    <span class="upload-icon">📂</span>
+    <h3>Drop your jobs CSV or Excel file here</h3>
+    <p>or click to browse · .csv / .xlsx supported</p>
+    <input type="file" id="file-input" accept=".csv,.xlsx,.xls">
+  </div>
+  <div class="optional-uploads">
+    <div class="opt-upload" id="rfi-zone"><p>Optional</p><span id="rfi-label">+ RFI Data</span><input type="file" id="rfi-input" accept=".csv"></div>
+    <div class="opt-upload" id="sub-zone"><p>Optional</p><span id="sub-label">+ Submittals</span><input type="file" id="sub-input" accept=".csv"></div>
+    <div class="opt-upload" id="permit-zone"><p>Optional</p><span id="permit-label">+ Permits</span><input type="file" id="permit-input" accept=".csv"></div>
+  </div>
+  <button class="btn-sample" id="btn-sample">↗ Load sample data instead</button>
+  <div class="loading-bar" id="loading-bar"></div>
+  <div id="upload-error" style="margin-top:1rem;font-family:var(--font-mono);font-size:.75rem;color:var(--red)"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-logo">PRG · Risk Intel</div>
+    <div class="topbar-title">Operations Dashboard</div>
+    <div style="display:flex;gap:.5rem">
+    <button class="btn-reset" id="btn-email" style="border-color:var(--blue);color:var(--blue)">📧 Email Report</button>
+    <button class="btn-reset" id="btn-export" style="border-color:var(--accent);color:var(--accent)">↓ Export PDF</button>
+    <button class="btn-reset" id="btn-reset">← New Upload</button>
+  </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="jobs">Job Risk Table</div>
+    <div class="tab" data-tab="rfi">RFIs & Submittals</div>
+    <div class="tab" data-tab="permits">Permits</div>
+    <div class="tab" data-tab="contractors">Contractors</div>
+    <div class="tab" data-tab="settings">Settings</div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="content">
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-title">Risk Level Breakdown</div><div class="chart-wrap"><canvas id="chart-risk"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Avg Delay by Contractor (days)</div><div class="chart-wrap"><canvas id="chart-delay"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Jobs by Region</div><div class="chart-wrap"><canvas id="chart-region"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">Contractor Risk Factor</div><div class="chart-wrap"><canvas id="chart-contractor-risk"></canvas></div></div>
+      </div>
+      <div id="ml-overview-section" style="display:none">
+        <div class="section-header" style="margin-bottom:1rem">
+          <div class="section-title">ML Delay Predictions</div>
+          <span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)" id="ml-overview-meta"></span>
+        </div>
+        <div class="kpi-grid" id="ml-kpi-grid" style="margin-bottom:1rem"></div>
+        <div class="table-wrap">
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Job ID</th><th>Contractor</th><th>Scope</th><th>Rule-Based</th><th>ML Delay %</th><th>Expected Delay</th><th>ML Level</th><th>Confidence</th></tr></thead>
+              <tbody id="ml-overview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOBS -->
+  <div class="tab-content" id="tab-jobs">
+    <div class="content">
+      <div class="section-header"><div class="section-title">Active Job Risk Scores</div></div>
+      <div class="table-wrap">
+        <div class="filter-bar">
+          <button class="filter-btn active-all" data-filter="ALL">All</button>
+          <button class="filter-btn" data-filter="HIGH">🔴 High</button>
+          <button class="filter-btn" data-filter="MEDIUM">🟡 Medium</button>
+          <button class="filter-btn" data-filter="LOW">🟢 Low</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table><thead><tr><th>Job ID</th><th>Contractor</th><th>Scope</th><th>Region</th><th>Days Open</th><th>Delay</th><th>Markout</th><th>Insp Fails</th><th>Risk Score</th><th>Level</th><th>ML Delay %</th><th>ML Predict</th><th>Reasons</th></tr></thead><tbody id="jobs-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RFI -->
+  <div class="tab-content" id="tab-rfi">
+    <div class="content">
+      <div id="no-rfi-msg" class="no-data">No RFI or submittal data loaded.<br><br>Upload RFI and submittal CSV files on the main screen, or use sample data.</div>
+      <div id="rfi-loaded" style="display:none">
+        <div class="kpi-grid" id="rfi-kpi-grid"></div>
+        <div class="two-col">
+          <div>
+            <div class="section-header"><div class="section-title">Open RFIs</div></div>
+            <div class="table-wrap"><div style="overflow-x:auto"><table><thead><tr><th>RFI ID</th><th>Job ID</th><th>Subject</th><th>Submitted</th><th>Days Open</th><th>Status</th></tr></thead><tbody id="rfi-tbody"></tbody></table></div></div>
+          </div>
+          <div>
+            <div class="section-header"><div class="section-title">Pending Submittals</div></div>
+            <div class="table-wrap"><div style="overflow-x:auto"><table><thead><tr><th>Sub ID</th><th>Job ID</th><th>Type</th><th>Required By</th><th>Status</th></tr></thead><tbody id="sub-tbody"></tbody></table></div></div>
+          </div>
+        </div>
+        <div class="section-header"><div class="section-title">Jobs with High RFI Activity</div></div>
+        <div class="table-wrap"><div style="overflow-x:auto"><table><thead><tr><th>Job ID</th><th>Total RFIs</th><th>Open</th><th>Overdue</th></tr></thead><tbody id="high-rfi-tbody"></tbody></table></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERMITS -->
+  <div class="tab-content" id="tab-permits">
+    <div class="content">
+      <div id="no-permit-msg" class="no-data">No permit data loaded.<br><br>Upload a permits CSV on the main screen, or use sample data.</div>
+      <div id="permit-loaded" style="display:none">
+        <div class="kpi-grid" id="permit-kpi-grid"></div>
+        <div class="two-col">
+          <div>
+            <div class="section-header"><div class="section-title">Blocked Jobs</div></div>
+            <div class="table-wrap"><div style="overflow-x:auto"><table><thead><tr><th>Job ID</th><th>Total Permits</th><th>Pending</th><th>Blocked</th><th>Expired</th></tr></thead><tbody id="blocked-tbody"></tbody></table></div></div>
+          </div>
+          <div>
+            <div class="section-header"><div class="section-title">Expiring Soon</div></div>
+            <div class="table-wrap"><div style="overflow-x:auto"><table><thead><tr><th>Permit ID</th><th>Job ID</th><th>Type</th><th>Expires</th><th>Days Left</th></tr></thead><tbody id="expiring-tbody"></tbody></table></div></div>
+          </div>
+        </div>
+        <div class="section-header"><div class="section-title">All Permits</div></div>
+        <div class="table-wrap">
+          <div class="filter-bar">
+            <button class="filter-btn active-all" data-pfilter="ALL">All</button>
+            <button class="filter-btn" data-pfilter="Blocked">🔴 Blocked</button>
+            <button class="filter-btn" data-pfilter="Pending">🟡 Pending</button>
+            <button class="filter-btn" data-pfilter="Approved">🟢 Approved</button>
+            <button class="filter-btn" data-pfilter="Expired">⚫ Expired</button>
+          </div>
+          <div style="overflow-x:auto"><table><thead><tr><th>Permit ID</th><th>Job ID</th><th>Type</th><th>Authority</th><th>Applied</th><th>Expiration</th><th>Days Waiting</th><th>Status</th><th>Blocked Reason</th></tr></thead><tbody id="permits-tbody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTRACTORS -->
+  <div class="tab-content" id="tab-contractors">
+    <div class="content">
+      <div class="section-header"><div class="section-title">Contractor Performance Scorecards</div></div>
+      <div class="contractor-grid" id="contractor-grid"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="tab-content" id="tab-settings">
+    <div class="content">
+      <div class="section-header"><div class="section-title">Google Sheets Integration</div></div>
+
+      <div id="sheets-disconnected" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem">
+        <h3 style="margin:0 0 1rem 0;font-size:1rem;color:var(--text)">Connect to Google Sheets</h3>
+        <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono);line-height:1.6">Automatically sync your job data from Google Sheets. Your data will refresh every 4 hours.</p>
+        <button id="btn-connect-sheets" style="padding:0.75rem 1.5rem;background:var(--blue);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.8rem;font-weight:600">Connect Google Sheets</button>
+      </div>
+
+      <div id="sheets-connected" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem">
+        <h3 style="margin:0 0 1rem 0;font-size:1rem;color:var(--green)">✓ Google Sheets Connected</h3>
+        <div style="margin-bottom:1.5rem">
+          <label style="display:block;font-family:var(--font-mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em">Spreadsheet URL</label>
+          <input type="text" id="sheets-url" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%;padding:0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.85rem;margin-bottom:0.75rem">
+          <button id="btn-preview-sheets" style="padding:0.6rem 1.2rem;background:var(--accent);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Preview & Map Columns</button>
+        </div>
+        <button id="btn-disconnect-sheets" style="padding:0.5rem 1rem;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.7rem">Disconnect</button>
+        <p id="sheets-status" style="margin:1rem 0 0 0;font-size:0.75rem;font-family:var(--font-mono)"></p>
+      </div>
+
+      <div id="column-mapper" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-top:1rem">
+        <h3 style="margin:0 0 1rem 0;font-size:1rem;color:var(--text)">Map Columns</h3>
+        <p style="margin:0 0 1.5rem 0;font-size:0.75rem;color:var(--muted);font-family:var(--font-mono)">Match your spreadsheet columns to the required fields.</p>
+        <div id="column-mapping-fields"></div>
+        <button id="btn-import-sheets" style="padding:0.75rem 1.5rem;background:var(--green);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.8rem;font-weight:600;margin-top:1rem">Import Data</button>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-top:1rem">
+        <h3 style="margin:0 0 0.5rem 0;font-size:1rem;color:var(--text)">ML Delay Predictor</h3>
+        <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono);line-height:1.6">Train a Random Forest model on your completed jobs to predict delay risk for active jobs. Load data first.</p>
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <button id="btn-train-model" style="padding:0.75rem 1.5rem;background:var(--accent);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.8rem;font-weight:600">Train Model</button>
+          <div id="train-model-status" style="font-family:var(--font-mono);font-size:0.75rem;color:var(--muted)"></div>
+        </div>
+        <div id="model-metrics" style="display:none;margin-top:1.5rem;display:none">
+          <div style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem">Model Performance</div>
+          <div id="model-metrics-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.75rem"></div>
+        </div>
+      </div>
+
+      <!-- Email Reports -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-top:1rem">
+        <h3 style="margin:0 0 0.5rem 0;font-size:1rem;color:var(--text)">Automated Email Reports</h3>
+        <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono);line-height:1.6">Send a weekly HTML risk report to your team automatically.</p>
+
+        <div style="margin-bottom:1.25rem">
+          <label style="display:block;font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:.05em">Recipients (comma-separated)</label>
+          <input type="text" id="email-recipients" placeholder="ops@company.com, manager@company.com"
+            style="width:100%;padding:0.65rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.8rem;box-sizing:border-box">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.25rem">
+          <div>
+            <label style="display:block;font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:.05em">Send Day</label>
+            <select id="email-send-day" style="width:100%;padding:0.65rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.8rem">
+              <option value="monday">Monday</option>
+              <option value="tuesday">Tuesday</option>
+              <option value="wednesday">Wednesday</option>
+              <option value="thursday">Thursday</option>
+              <option value="friday">Friday</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:.05em">Send Time</label>
+            <input type="time" id="email-send-time" value="08:00"
+              style="width:100%;padding:0.65rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.8rem;box-sizing:border-box">
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+            <input type="checkbox" id="email-enabled" style="width:16px;height:16px;accent-color:var(--accent)">
+            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text)">Enable weekly schedule</span>
+          </label>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+          <button id="btn-save-email-settings" style="padding:0.65rem 1.25rem;background:var(--accent);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Save Settings</button>
+          <button id="btn-send-test-report" style="padding:0.65rem 1.25rem;background:var(--blue);border:none;color:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Send Test Now</button>
+          <button id="btn-preview-email" style="padding:0.65rem 1.25rem;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem">Preview Email</button>
+          <span id="email-settings-status" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--muted)"></span>
+        </div>
+
+        <div id="email-last-sent" style="margin-top:1rem;font-family:var(--font-mono);font-size:0.7rem;color:var(--muted);display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+let globalData = null;
+let currentFilter = 'ALL';
+let currentPermitFilter = 'ALL';
+let maxScore = 1;
+let charts = {};
+let selectedFiles = {jobs:null,rfi:null,sub:null,permit:null};
+
+// Upload
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) { selectedFiles.jobs = e.dataTransfer.files[0]; uploadAll(); } });
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) { selectedFiles.jobs = fileInput.files[0]; uploadAll(); } });
+
+[['rfi-zone','rfi-input','rfi-label','rfi','RFI Data'],['sub-zone','sub-input','sub-label','sub','Submittals'],['permit-zone','permit-input','permit-label','permit','Permits']].forEach(([zid, iid, lid, key, name]) => {
+  document.getElementById(zid).addEventListener('click', () => document.getElementById(iid).click());
+  document.getElementById(iid).addEventListener('change', function() {
+    if (this.files[0]) { selectedFiles[key] = this.files[0]; document.getElementById(lid).textContent = '✓ ' + this.files[0].name; document.getElementById(zid).classList.add('loaded'); }
+  });
+});
+
+document.getElementById('btn-sample').addEventListener('click', loadSample);
+document.getElementById('btn-reset').addEventListener('click', () => { document.getElementById('upload-screen').style.display='flex'; document.getElementById('dashboard').style.display='none'; selectedFiles={jobs:null,rfi:null,sub:null,permit:null}; hideLoading(); });
+
+function showLoading() { document.getElementById('loading-bar').classList.add('active'); document.getElementById('upload-error').textContent=''; }
+function hideLoading() { document.getElementById('loading-bar').classList.remove('active'); }
+
+async function uploadAll() {
+  if (!selectedFiles.jobs) return;
+  showLoading();
+  const form = new FormData();
+  form.append('file', selectedFiles.jobs);
+  if (selectedFiles.rfi) form.append('rfi_file', selectedFiles.rfi);
+  if (selectedFiles.sub) form.append('sub_file', selectedFiles.sub);
+  if (selectedFiles.permit) form.append('permit_file', selectedFiles.permit);
+  try {
+    const res = await fetch('/api/upload', { method:'POST', body:form });
+    const data = await res.json();
+    if (data.error) { document.getElementById('upload-error').textContent = '⚠ ' + data.error; hideLoading(); return; }
+    renderDashboard(data);
+  } catch(e) { document.getElementById('upload-error').textContent = '⚠ Failed to connect. Is the server running?'; hideLoading(); }
+}
+
+async function loadSample() {
+  showLoading();
+  try {
+    const res = await fetch('/api/sample');
+    const data = await res.json();
+    if (data.error) { document.getElementById('upload-error').textContent = '⚠ ' + data.error; hideLoading(); return; }
+    renderDashboard(data);
+  } catch(e) { document.getElementById('upload-error').textContent = '⚠ Failed to connect. Is server running?'; hideLoading(); }
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// Job filters
+document.querySelectorAll('[data-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter]').forEach(b => b.className='filter-btn');
+    currentFilter = btn.dataset.filter;
+    const cls = currentFilter==='ALL'?'active-all':currentFilter==='HIGH'?'active-high':currentFilter==='MEDIUM'?'active-medium':'active-low';
+    btn.classList.add(cls);
+    if (globalData) renderJobsTable(globalData.scored_jobs);
+  });
+});
+
+// Permit filters
+document.querySelectorAll('[data-pfilter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-pfilter]').forEach(b => b.className='filter-btn');
+    currentPermitFilter = btn.dataset.pfilter;
+    btn.classList.add('active-all');
+    if (globalData) renderPermitsTable(globalData.permits || []);
+  });
+});
+
+function renderDashboard(data) {
+  globalData = data;
+  hideLoading();
+  const scored = data.scored_jobs || [];
+  maxScore = scored.length ? Math.max(...scored.map(j => j.risk_score)) : 1;
+  renderKPIs(data.summary);
+  renderCharts(data);
+  renderJobsTable(scored);
+  renderMLOverview(scored);
+  renderRFI(data);
+  renderPermits(data);
+  renderContractors(data.ranked_contractors);
+  document.getElementById('upload-screen').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="overview"]').classList.add('active');
+  document.getElementById('tab-overview').classList.add('active');
+}
+
+function renderKPIs(s) {
+  document.getElementById('kpi-grid').innerHTML = [
+    {label:'Total Jobs',value:s.total_jobs,sub:`${s.active_jobs} active`,cls:'blue'},
+    {label:'High Risk',value:s.high_risk_count,sub:'need attention now',cls:'red'},
+    {label:'Medium Risk',value:s.medium_risk_count,sub:'watch closely',cls:'amber'},
+    {label:'Low Risk',value:s.low_risk_count,sub:'on track',cls:'green'},
+    {label:'Avg Delay',value:s.avg_delay_days+'d',sub:'completed jobs',cls:'accent'},
+    {label:'Data Issues',value:s.invalid_records,sub:'validation errors',cls:s.invalid_records>0?'amber':'green'},
+  ].map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+}
+
+function renderMLOverview(jobs) {
+  const withML = jobs.filter(j => j.ml_delay_probability != null);
+  const section = document.getElementById('ml-overview-section');
+  if (!withML.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  const highML  = withML.filter(j => j.ml_risk_level === 'HIGH').length;
+  const avgProb = Math.round(withML.reduce((s,j) => s + j.ml_delay_probability, 0) / withML.length);
+  const avgDays = (withML.reduce((s,j) => s + (j.ml_expected_delay_days||0), 0) / withML.length).toFixed(1);
+  const conf    = withML[0]?.ml_confidence || 'low';
+
+  document.getElementById('ml-overview-meta').textContent =
+    `Model confidence: ${conf} · ${withML.length} jobs scored`;
+
+  document.getElementById('ml-kpi-grid').innerHTML = [
+    {label:'High ML Risk',    value: highML,    sub:'predicted major delay',  cls: highML>0?'red':'green'},
+    {label:'Avg Delay Prob',  value: avgProb+'%', sub:'chance of 30+ day delay', cls: avgProb>=50?'red':avgProb>=25?'amber':'green'},
+    {label:'Avg Expected Delay', value: avgDays+'d', sub:'predicted delay days', cls:'accent'},
+    {label:'Jobs Scored',     value: withML.length, sub:`${conf} confidence`,   cls:'blue'},
+  ].map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  const sorted = [...withML].sort((a,b) => (b.ml_delay_probability||0) - (a.ml_delay_probability||0));
+  document.getElementById('ml-overview-tbody').innerHTML = sorted.map(j => {
+    const prob = j.ml_delay_probability;
+    const pc = prob>=60?'var(--red)':prob>=30?'var(--amber)':'var(--green)';
+    const mlLvl = j.ml_risk_level || '—';
+    return `<tr>
+      <td style="color:var(--accent);font-weight:500">${j.job_id}</td>
+      <td>${j.contractor}</td>
+      <td style="color:var(--muted)">${j.scope_type}</td>
+      <td><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>
+      <td><div style="display:flex;align-items:center;gap:.4rem">
+        <div style="width:56px;height:4px;background:var(--border);border-radius:2px">
+          <div style="width:${prob}%;height:100%;background:${pc};border-radius:2px"></div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:.72rem;color:${pc}">${prob}%</span>
+      </div></td>
+      <td style="font-family:var(--font-mono);font-size:.75rem;color:${(j.ml_expected_delay_days||0)>0?'var(--amber)':'var(--muted)'}">${j.ml_expected_delay_days||0}d</td>
+      <td><span class="risk-pill risk-${mlLvl}">${mlLvl}</span></td>
+      <td style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">${j.ml_confidence||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function mkChart(id, type, data, options) { destroyChart(id); charts[id] = new Chart(document.getElementById('chart-'+id), {type, data, options}); }
+
+const baseOpts = (indexAxis) => ({
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{grid:{color:indexAxis==='y'?'#1e2330':'none'},ticks:{color:indexAxis==='y'?'#5a6070':'#e8eaf0',font:{family:'DM Mono',size:10}}},
+    y:{grid:{color:indexAxis==='y'?'none':'#1e2330'},ticks:{color:indexAxis==='y'?'#e8eaf0':'#5a6070',font:{family:'DM Mono',size:10}}}
+  }
+});
+
+function renderCharts(data) {
+  const s = data.summary;
+  mkChart('risk','doughnut',{labels:['High','Medium','Low'],datasets:[{data:[s.high_risk_count,s.medium_risk_count,s.low_risk_count],backgroundColor:['#ff4757','#ffa502','#2ed573'],borderWidth:0,hoverOffset:8}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#5a6070',font:{family:'DM Mono',size:11},padding:16}}}});
+
+  const dc = data.delay_by_contractor||[];
+  mkChart('delay','bar',{labels:dc.map(c=>c.contractor.split(' ').slice(0,2).join(' ')),datasets:[{data:dc.map(c=>c.avg_delay_days),backgroundColor:'#e8c547',borderRadius:4,barThickness:20}]},{...baseOpts('y'),indexAxis:'y',plugins:{legend:{display:false}}});
+
+  const rr = data.region_risk||{};
+  const regions = Object.keys(rr);
+  mkChart('region','bar',{labels:regions,datasets:[{label:'High',data:regions.map(r=>rr[r].HIGH),backgroundColor:'#ff4757',borderRadius:3,stack:'s'},{label:'Medium',data:regions.map(r=>rr[r].MEDIUM),backgroundColor:'#ffa502',borderRadius:3,stack:'s'},{label:'Low',data:regions.map(r=>rr[r].LOW),backgroundColor:'#2ed573',borderRadius:3,stack:'s'}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#5a6070',font:{family:'DM Mono',size:10},boxWidth:12}}},scales:{x:{grid:{display:false},ticks:{color:'#e8eaf0',font:{family:'DM Mono',size:10}}},y:{stacked:true,grid:{color:'#1e2330'},ticks:{color:'#5a6070',font:{family:'DM Mono',size:10}}}}});
+
+  const rc = data.ranked_contractors||[];
+  mkChart('contractor-risk','bar',{labels:rc.map(c=>c.contractor.split(' ').slice(0,2).join(' ')),datasets:[{data:rc.map(c=>c.contractor_risk_factor),backgroundColor:rc.map((_,i)=>i===0?'#ff4757':i===1?'#ffa502':'#1e90ff'),borderRadius:4,barThickness:22}]},{...baseOpts('x'),plugins:{legend:{display:false}}});
+}
+
+function renderJobsTable(jobs) {
+  const filtered = currentFilter==='ALL' ? jobs : jobs.filter(j=>j.risk_level===currentFilter);
+  const tbody = document.getElementById('jobs-tbody');
+  if (!filtered.length) { tbody.innerHTML=`<tr><td colspan="13" style="text-align:center;padding:2rem;font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">No jobs match this filter.</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(j => {
+    const pct = Math.min(100, Math.round((j.risk_score/maxScore)*100));
+    const bc = j.risk_level==='HIGH'?'var(--red)':j.risk_level==='MEDIUM'?'var(--amber)':'var(--green)';
+    const mlProb = j.ml_delay_probability;
+    const mlLevel = j.ml_risk_level;
+    const mlDays = j.ml_expected_delay_days;
+    const mlConf = j.ml_confidence;
+    const mlProbColor = mlProb==null?'var(--muted)':mlProb>=60?'var(--red)':mlProb>=30?'var(--amber)':'var(--green)';
+    const mlProbCell = mlProb==null
+      ? `<td style="color:var(--muted);font-family:var(--font-mono);font-size:.72rem">—</td>`
+      : `<td><div style="display:flex;align-items:center;gap:.4rem">
+           <div style="width:48px;height:4px;background:var(--border);border-radius:2px;flex-shrink:0">
+             <div style="width:${mlProb}%;height:100%;background:${mlProbColor};border-radius:2px"></div>
+           </div>
+           <span style="font-family:var(--font-mono);font-size:.72rem;color:${mlProbColor}">${mlProb}%</span>
+         </div></td>`;
+    const mlPredCell = mlLevel==null
+      ? `<td style="color:var(--muted);font-family:var(--font-mono);font-size:.72rem">—</td>`
+      : `<td><span class="risk-pill risk-${mlLevel}" title="${mlDays}d expected · ${mlConf} confidence">${mlLevel}<span style="opacity:.6;margin-left:.3rem">${mlDays}d</span></span></td>`;
+    return `<tr><td style="color:var(--accent);font-weight:500">${j.job_id}</td><td>${j.contractor}</td><td style="color:var(--muted)">${j.scope_type}</td><td style="color:var(--muted)">${j.region}</td><td>${j.actual_duration_days||0}</td><td style="color:${j.delay_days>0?'var(--red)':'var(--muted)'}">${j.delay_days||0}d</td><td>${j.markout_issues||0}</td><td>${j.inspections_failed||0}</td><td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${bc}"></div></div><span class="score-num">${j.risk_score}</span></div></td><td><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>${mlProbCell}${mlPredCell}<td><div class="reasons-text">${j.risk_reasons||'—'}</div></td></tr>`;
+  }).join('');
+}
+
+function emptyRow(cols, msg) { return `<tr><td colspan="${cols}" style="text-align:center;padding:1.5rem;font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">${msg}</td></tr>`; }
+
+function renderRFI(data) {
+  const has = data.rfis && data.rfis.length > 0;
+  document.getElementById('no-rfi-msg').style.display = has ? 'none' : 'block';
+  document.getElementById('rfi-loaded').style.display = has ? 'block' : 'none';
+  if (!has) return;
+  const rs = data.rfi_summary, ss = data.submittal_summary||{};
+  document.getElementById('rfi-kpi-grid').innerHTML = [
+    {label:'Total RFIs',value:rs.total,cls:'blue'},{label:'Open RFIs',value:rs.open,cls:rs.open>0?'amber':'green'},
+    {label:'Overdue RFIs',value:rs.overdue,cls:rs.overdue>0?'red':'green'},{label:'Avg Response',value:rs.avg_response_days+'d',cls:'accent'},
+    {label:'Submittals',value:ss.total||0,cls:'blue'},{label:'Pending',value:ss.pending||0,cls:ss.pending>0?'amber':'green'},
+    {label:'Overdue Subs',value:ss.overdue||0,cls:ss.overdue>0?'red':'green'},{label:'Resubmits',value:ss.resubmit_count||0,cls:ss.resubmit_count>0?'amber':'green'},
+  ].map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');
+
+  const openRFIs = (data.rfis||[]).filter(r=>r.status==='Open').sort((a,b)=>b.days_open-a.days_open);
+  document.getElementById('rfi-tbody').innerHTML = openRFIs.slice(0,20).map(r =>
+    `<tr><td style="color:var(--accent)">${r.rfi_id}</td><td>${r.job_id}</td><td style="color:var(--muted);max-width:160px;white-space:normal">${r.subject}</td><td>${r.submitted_date||'—'}</td><td style="color:${r.days_open>14?'var(--red)':'var(--text)'}">${r.days_open}d${r.overdue?'<span class="warn-tag">OVERDUE</span>':''}</td><td><span class="status-pill s-open">Open</span></td></tr>`
+  ).join('') || emptyRow(6, 'No open RFIs.');
+
+  const pending = (data.submittals||[]).filter(s=>['Pending Review','Resubmit Required'].includes(s.status)).sort((a,b)=>b.overdue-a.overdue);
+  document.getElementById('sub-tbody').innerHTML = pending.slice(0,20).map(s =>
+    `<tr><td style="color:var(--accent)">${s.submittal_id}</td><td>${s.job_id}</td><td style="color:var(--muted)">${s.type}</td><td style="color:${s.overdue?'var(--red)':'var(--text)'}">${s.required_by_date||'—'}${s.overdue?'<span class="warn-tag">OVERDUE</span>':''}</td><td><span class="status-pill ${s.status==='Resubmit Required'?'s-blocked':'s-pending'}">${s.status}</span></td></tr>`
+  ).join('') || emptyRow(5, 'No pending submittals.');
+
+  document.getElementById('high-rfi-tbody').innerHTML = (data.high_rfi_jobs||[]).map(j =>
+    `<tr><td style="color:var(--accent)">${j.job_id}</td><td>${j.total}</td><td style="color:${j.open>2?'var(--red)':'var(--amber)'}">${j.open}</td><td style="color:${j.overdue>0?'var(--red)':'var(--muted)'}">${j.overdue}</td></tr>`
+  ).join('') || emptyRow(4, 'No high RFI jobs.');
+}
+
+function renderPermits(data) {
+  const has = data.permits && data.permits.length > 0;
+  document.getElementById('no-permit-msg').style.display = has ? 'none' : 'block';
+  document.getElementById('permit-loaded').style.display = has ? 'block' : 'none';
+  if (!has) return;
+
+  const ps = data.permit_summary;
+  document.getElementById('permit-kpi-grid').innerHTML = [
+    {label:'Total Permits',value:ps.total,cls:'blue'},{label:'Approved',value:ps.approved,cls:'green'},
+    {label:'Pending',value:ps.pending,cls:ps.pending>0?'amber':'green'},{label:'Blocked',value:ps.blocked,cls:ps.blocked>0?'red':'green'},
+    {label:'Expired',value:ps.expired,cls:ps.expired>0?'red':'green'},{label:'Expiring Soon',value:ps.expiring_soon,cls:ps.expiring_soon>0?'amber':'green'},
+    {label:'Avg Wait',value:ps.avg_wait_days+'d',cls:'accent'},
+  ].map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');
+
+  document.getElementById('blocked-tbody').innerHTML = (data.blocked_jobs||[]).slice(0,15).map(j =>
+    `<tr><td style="color:var(--accent)">${j.job_id}</td><td>${j.total}</td><td style="color:${j.pending>0?'var(--amber)':'var(--muted)'}">${j.pending}</td><td style="color:${j.blocked>0?'var(--red)':'var(--muted)'}">${j.blocked}</td><td style="color:${j.expired>0?'var(--red)':'var(--muted)'}">${j.expired}</td></tr>`
+  ).join('') || emptyRow(5, 'No blocked jobs.');
+
+  document.getElementById('expiring-tbody').innerHTML = (data.expiring_permits||[]).slice(0,15).map(p =>
+    `<tr><td style="color:var(--accent)">${p.permit_id}</td><td>${p.job_id}</td><td style="color:var(--muted)">${p.permit_type}</td><td>${p.expiration_date||'—'}</td><td style="color:${p.days_until_expiry<=7?'var(--red)':'var(--amber)'}">${p.days_until_expiry}d<span class="amber-tag">EXPIRING</span></td></tr>`
+  ).join('') || emptyRow(5, 'No permits expiring soon.');
+
+  renderPermitsTable(data.permits||[]);
+}
+
+function renderPermitsTable(permits) {
+  const filtered = currentPermitFilter==='ALL' ? permits : permits.filter(p=>p.status===currentPermitFilter);
+  const statusCls = s => s==='Approved'?'s-approved':s==='Blocked'?'s-blocked':s==='Expired'?'s-expired':'s-pending';
+  document.getElementById('permits-tbody').innerHTML = filtered.map(p =>
+    `<tr><td style="color:var(--accent)">${p.permit_id}</td><td>${p.job_id}</td><td>${p.permit_type}</td><td style="color:var(--muted)">${p.issuing_authority}</td><td style="color:var(--muted)">${p.applied_date||'—'}</td><td style="color:${p.expiring_soon?'var(--amber)':p.days_until_expiry<0?'var(--red)':'var(--muted)'}">${p.expiration_date||'—'}${p.expiring_soon?'<span class="amber-tag">SOON</span>':''}</td><td style="color:${p.days_waiting>21?'var(--amber)':'var(--muted)'}">${p.days_waiting||0}d</td><td><span class="status-pill ${statusCls(p.status)}">${p.status}</span></td><td style="color:var(--muted);max-width:160px;white-space:normal">${p.blocked_reason||'—'}</td></tr>`
+  ).join('') || emptyRow(9, 'No permits match this filter.');
+}
+
+function renderContractors(contractors) {
+  if (!contractors||!contractors.length) { document.getElementById('contractor-grid').innerHTML='<div style="color:var(--muted);font-family:var(--font-mono)">No contractor data.</div>'; return; }
+  const maxRisk = Math.max(...contractors.map(c=>c.contractor_risk_factor));
+  document.getElementById('contractor-grid').innerHTML = contractors.map(c => {
+    const pct = Math.round((c.contractor_risk_factor/maxRisk)*100);
+    return `<div class="contractor-card"><div class="contractor-rank">#${c.rank} of ${contractors.length}</div><div class="contractor-name">${c.contractor}</div><div class="contractor-stats"><div class="stat-item"><div class="stat-label">Avg Delay</div><div class="stat-value" style="color:${c.avg_delay_days>10?'var(--red)':'var(--green)'}">${c.avg_delay_days}d</div></div><div class="stat-item"><div class="stat-label">Jobs</div><div class="stat-value">${c.job_count}</div></div><div class="stat-item"><div class="stat-label">Markout Issues</div><div class="stat-value" style="color:${c.avg_markout_issues>1?'var(--amber)':'var(--muted)'}">${c.avg_markout_issues}</div></div><div class="stat-item"><div class="stat-label">Insp Fail Rate</div><div class="stat-value" style="color:${c.inspection_fail_rate>1?'var(--amber)':'var(--muted)'}">${c.inspection_fail_rate}</div></div></div><div class="risk-meter"><div class="risk-meter-label"><span>Risk Factor</span><span style="color:var(--text)">${c.contractor_risk_factor}</span></div><div class="risk-meter-bar"><div class="risk-meter-fill" style="width:${pct}%"></div></div></div></div>`;
+  }).join('');
+}
+
+
+
+// Google Sheets Integration
+let sheetsData = null;
+
+async function checkSheetsConnection() {
+  try {
+    const res = await fetch('/api/sheets/status');
+    const data = await res.json();
+    if (data.connected) {
+      document.getElementById('sheets-disconnected').style.display = 'none';
+      document.getElementById('sheets-connected').style.display = 'block';
+    }
+  } catch(e) { console.error('Sheets status check failed:', e); }
+}
+
+document.getElementById('btn-connect-sheets')?.addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/sheets/connect');
+    const data = await res.json();
+    if (data.auth_url) {
+      window.open(data.auth_url, '_blank', 'width=600,height=700');
+      // Poll for connection
+      const poll = setInterval(async () => {
+        const status = await fetch('/api/sheets/status');
+        const result = await status.json();
+        if (result.connected) {
+          clearInterval(poll);
+          checkSheetsConnection();
+        }
+      }, 2000);
+    }
+  } catch(e) { alert('Connection failed: ' + e.message); }
+});
+
+document.getElementById('btn-disconnect-sheets')?.addEventListener('click', async () => {
+  if (!confirm('Disconnect Google Sheets?')) return;
+  try {
+    await fetch('/api/sheets/disconnect', {method:'POST'});
+    document.getElementById('sheets-disconnected').style.display = 'block';
+    document.getElementById('sheets-connected').style.display = 'none';
+  } catch(e) { alert('Disconnect failed: ' + e.message); }
+});
+
+document.getElementById('btn-preview-sheets')?.addEventListener('click', async () => {
+  const url = document.getElementById('sheets-url').value.trim();
+  if (!url) { alert('Enter spreadsheet URL'); return; }
+  const status = document.getElementById('sheets-status');
+  status.textContent = 'Loading...';
+  status.style.color = 'var(--muted)';
+  try {
+    const res = await fetch('/api/sheets/preview', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url})
+    });
+    const data = await res.json();
+    if (res.ok) {
+      sheetsData = data;
+      status.textContent = `✓ Found: ${data.title} (${data.row_count} rows)`;
+      status.style.color = 'var(--green)';
+      renderColumnMapper(data);
+    } else {
+      status.textContent = '✗ ' + (data.error || 'Failed');
+      status.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    status.textContent = '✗ Error: ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+});
+
+function renderColumnMapper(data) {
+  const container = document.getElementById('column-mapping-fields');
+  const fields = ['job_id','contractor','scope_type','region','start_date','planned_end_date','actual_end_date','status','markout_required','markout_issues','inspections_failed','crew_type'];
+  
+  container.innerHTML = fields.map(field => {
+    const suggested = data.suggested_mapping[field];
+    const options = data.headers.map((h,i) => 
+      `<option value="${i}" ${i===suggested?'selected':''}>${h}</option>`
+    ).join('');
+    return `<div style="margin-bottom:1rem">
+      <label style="display:block;font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.05em">${field.replace(/_/g,' ')}</label>
+      <select data-field="${field}" style="width:100%;padding:0.5rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.8rem">
+        <option value="">-- Skip --</option>
+        ${options}
+      </select>
+    </div>`;
+  }).join('');
+  
+  document.getElementById('column-mapper').style.display = 'block';
+}
+
+document.getElementById('btn-import-sheets')?.addEventListener('click', async () => {
+  if (!sheetsData) return;
+  const selects = document.querySelectorAll('#column-mapping-fields select');
+  const mapping = {};
+  selects.forEach(s => {
+    const field = s.dataset.field;
+    const col = s.value;
+    if (col) mapping[field] = parseInt(col);
+  });
+  
+  const btn = document.getElementById('btn-import-sheets');
+  btn.textContent = 'Importing...';
+  btn.disabled = true;
+  
+  try {
+    const res = await fetch('/api/sheets/import', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        spreadsheet_id: sheetsData.spreadsheet_id,
+        sheet_name: sheetsData.sheet_name,
+        column_mapping: mapping
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      renderDashboard(data);
+    } else {
+      alert('Import failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch(e) {
+    alert('Import error: ' + e.message);
+  } finally {
+    btn.textContent = 'Import Data';
+    btn.disabled = false;
+  }
+});
+
+// Check connection on settings tab open
+document.querySelector('[data-tab="settings"]')?.addEventListener('click', () => {
+  checkSheetsConnection();
+  checkModelStatus();
+});
+
+async function checkModelStatus() {
+  try {
+    const res = await fetch('/api/model-status');
+    const data = await res.json();
+    if (data.trained) {
+      showModelMetrics(data);
+      document.getElementById('train-model-status').textContent =
+        `✓ Trained on ${data.trained_on} jobs · ${data.trained_at}`;
+      document.getElementById('train-model-status').style.color = 'var(--green)';
+    }
+  } catch(e) {}
+}
+
+function showModelMetrics(data) {
+  const grid = document.getElementById('model-metrics-grid');
+  const clf = data.clf_metrics || {};
+  const reg = data.reg_metrics || {};
+  const metrics = [];
+  if (reg.mae != null) metrics.push({label:'MAE (days)', value: reg.mae, color:'var(--accent)'});
+  if (reg.r2  != null) metrics.push({label:'R²',         value: reg.r2,  color:'var(--blue)'});
+  if (clf.accuracy  != null) metrics.push({label:'Accuracy',  value: (clf.accuracy*100).toFixed(1)+'%',  color:'var(--green)'});
+  if (clf.precision != null) metrics.push({label:'Precision', value: (clf.precision*100).toFixed(1)+'%', color:'var(--green)'});
+  if (clf.recall    != null) metrics.push({label:'Recall',    value: (clf.recall*100).toFixed(1)+'%',    color:'var(--green)'});
+  if (!metrics.length) metrics.push({label:'Regressor only', value:'No classifier\n(uniform delays)', color:'var(--muted)'});
+  grid.innerHTML = metrics.map(m =>
+    `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1rem">
+      <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:0.25rem">${m.label}</div>
+      <div style="font-size:1.1rem;font-weight:700;color:${m.color}">${m.value}</div>
+    </div>`
+  ).join('');
+  document.getElementById('model-metrics').style.display = 'block';
+}
+
+document.getElementById('btn-train-model')?.addEventListener('click', async () => {
+  if (!globalData) { alert('Load data first — then train the model.'); return; }
+  const btn = document.getElementById('btn-train-model');
+  const status = document.getElementById('train-model-status');
+  btn.textContent = 'Training...';
+  btn.disabled = true;
+  status.textContent = 'Running Random Forest on completed jobs...';
+  status.style.color = 'var(--muted)';
+  try {
+    const res = await fetch('/api/train-model', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(globalData)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      status.textContent = `✓ ${data.message}`;
+      status.style.color = 'var(--green)';
+      showModelMetrics(data);
+    } else {
+      status.textContent = '✗ ' + (data.error || 'Training failed');
+      status.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    status.textContent = '✗ Error: ' + e.message;
+    status.style.color = 'var(--red)';
+  } finally {
+    btn.textContent = 'Train Model';
+    btn.disabled = false;
+  }
+});
+
+// ── Email Settings ────────────────────────────────────────────────────────────
+async function loadEmailSettings() {
+  try {
+    const res = await fetch('/api/email-settings');
+    const cfg = await res.json();
+    document.getElementById('email-recipients').value = (cfg.recipients || []).join(', ');
+    document.getElementById('email-send-day').value   = cfg.send_day || 'monday';
+    document.getElementById('email-send-time').value  = cfg.send_time || '08:00';
+    document.getElementById('email-enabled').checked  = !!cfg.enabled;
+    if (cfg.last_sent) {
+      const el = document.getElementById('email-last-sent');
+      el.textContent = `Last sent: ${new Date(cfg.last_sent).toLocaleString()}`;
+      el.style.display = 'block';
+    }
+  } catch(e) {}
+}
+
+document.querySelector('[data-tab="settings"]')?.addEventListener('click', loadEmailSettings, {once: false});
+
+document.getElementById('btn-save-email-settings')?.addEventListener('click', async () => {
+  const raw = document.getElementById('email-recipients').value;
+  const recipients = raw.split(',').map(s => s.trim()).filter(Boolean);
+  const payload = {
+    recipients,
+    send_day:  document.getElementById('email-send-day').value,
+    send_time: document.getElementById('email-send-time').value,
+    enabled:   document.getElementById('email-enabled').checked,
+  };
+  const status = document.getElementById('email-settings-status');
+  try {
+    const res = await fetch('/api/email-settings', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    status.textContent = res.ok ? '✓ Settings saved' : '✗ ' + (data.error || 'Failed');
+    status.style.color = res.ok ? 'var(--green)' : 'var(--red)';
+  } catch(e) { status.textContent = '✗ ' + e.message; status.style.color = 'var(--red)'; }
+});
+
+document.getElementById('btn-send-test-report')?.addEventListener('click', async () => {
+  if (!globalData) { alert('Load dashboard data first.'); return; }
+  const raw = document.getElementById('email-recipients').value;
+  const recipients = raw.split(',').map(s => s.trim()).filter(Boolean);
+  if (!recipients.length) { alert('Enter at least one recipient email.'); return; }
+  const btn = document.getElementById('btn-send-test-report');
+  const status = document.getElementById('email-settings-status');
+  btn.textContent = 'Sending...'; btn.disabled = true;
+  status.textContent = '';
+  try {
+    const res = await fetch('/api/send-weekly-report', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ recipients, data: globalData })
+    });
+    const result = await res.json();
+    if (res.ok) {
+      status.textContent = `✓ Sent to ${result.sent.join(', ')}`;
+      status.style.color = 'var(--green)';
+    } else {
+      status.textContent = '✗ ' + (result.error || 'Failed');
+      status.style.color = 'var(--red)';
+    }
+  } catch(e) { status.textContent = '✗ ' + e.message; status.style.color = 'var(--red)'; }
+  finally { btn.textContent = 'Send Test Now'; btn.disabled = false; }
+});
+
+document.getElementById('btn-preview-email')?.addEventListener('click', async () => {
+  if (!globalData) { alert('Load dashboard data first.'); return; }
+  try {
+    const res = await fetch('/api/preview-email', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(globalData)
+    });
+    const html = await res.text();
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+  } catch(e) { alert('Preview failed: ' + e.message); }
+});
+
+// Email Alert
+document.getElementById('btn-email').addEventListener('click', () => {
+  if (!globalData) { alert('Load data first.'); return; }
+  document.getElementById('email-modal').style.display = 'flex';
+  document.getElementById('email-input').value = '';
+  document.getElementById('email-status').textContent = '';
+});
+
+document.getElementById('email-cancel').addEventListener('click', () => {
+  document.getElementById('email-modal').style.display = 'none';
+});
+
+document.getElementById('email-send').addEventListener('click', async () => {
+  const email = document.getElementById('email-input').value.trim();
+  if (!email) { alert('Enter an email address'); return; }
+  if (!globalData) { alert('Load data first'); return; }
+  
+  const status = document.getElementById('email-status');
+  const btn = document.getElementById('email-send');
+  status.textContent = 'Sending...';
+  status.style.color = 'var(--muted)';
+  btn.disabled = true;
+  
+  try {
+    const res = await fetch('/api/send-test-email', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email, data: globalData })
+    });
+    const result = await res.json();
+    if (res.ok) {
+      status.textContent = '✓ Email sent successfully!';
+      status.style.color = 'var(--green)';
+      setTimeout(() => document.getElementById('email-modal').style.display = 'none', 2000);
+    } else {
+      status.textContent = '✗ ' + (result.error || 'Failed to send');
+      status.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    status.textContent = '✗ Error: ' + e.message;
+    status.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// PDF Export
+document.getElementById('btn-export').addEventListener('click', async () => {
+  if (!globalData) { alert('Load data first.'); return; }
+  const btn = document.getElementById('btn-export');
+  btn.textContent = 'Generating...';
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/export-pdf', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(globalData)
+    });
+    if (!res.ok) { const e = await res.json(); alert('Error: ' + e.error); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'PRG_Risk_Report.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { alert('Export failed: ' + e.message); }
+  finally { btn.textContent = '↓ Export PDF'; btn.disabled = false; }
+});
+</script>
+
+<!-- EMAIL MODAL -->
+<div id="email-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;max-width:400px;width:90%">
+    <h3 style="margin:0 0 1rem 0;font-size:1.1rem;color:var(--text)">Send Email Report</h3>
+    <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono)">Enter your email to receive the weekly risk report.</p>
+    <input type="email" id="email-input" placeholder="your@email.com" style="width:100%;padding:0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.85rem;margin-bottom:1rem">
+    <div style="display:flex;gap:0.75rem;justify-content:flex-end">
+      <button id="email-cancel" style="padding:0.6rem 1.2rem;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem">Cancel</button>
+      <button id="email-send" style="padding:0.6rem 1.2rem;background:var(--blue);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Send</button>
+    </div>
+    <p id="email-status" style="margin:1rem 0 0 0;font-size:0.75rem;font-family:var(--font-mono);text-align:center"></p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,203 @@
+job_id,utility_owner,contractor,scope_type,region,start_date,planned_end_date,actual_end_date,status,markout_required,markout_issues,inspections_failed,crew_type
+PRG-2024-0001,Con Edison,Tri-State Utilities Inc,Planned Upgrade,Manhattan,2024-10-16,2024-10-28,,Open,True,1,0,Civil
+PRG-2024-0002,Consolidated Gas,Consolidated Field Svcs,Service Install,Manhattan,2023-04-06,2023-04-24,,In Progress,False,0,2,Civil
+PRG-2024-0003,Con Edison,Tri-State Utilities Inc,Main Repair,Manhattan,2023-06-13,2023-08-01,,In Progress,True,1,0,Gas
+PRG-2024-0004,Consolidated Gas,XYZ Underground LLC,Main Repair,Staten Island,2023-12-19,2024-01-31,,In Progress,False,7,4,Water
+PRG-2024-0005,Con Edison,Metro Civil Corp,Service Install,Suffolk,2024-09-25,2024-11-24,,In Progress,True,0,0,Gas
+PRG-2024-0006,National Grid,Tri-State Utilities Inc,Main Repair,Staten Island,2023-10-12,2023-11-15,2023-11-25,Completed,True,1,1,Water
+PRG-2024-0007,National Grid,Empire Excavation,Main Repair,Brooklyn,2025-01-16,2025-02-05,,Open,True,4,5,Gas
+PRG-2024-0008,Consolidated Gas,Consolidated Field Svcs,Service Install,Queens,2024-02-15,2024-03-08,,Open,True,2,0,Civil
+PRG-2024-0009,PSEG,Consolidated Field Svcs,Planned Upgrade,Manhattan,2024-07-28,2024-09-05,,In Progress,True,3,2,Civil
+PRG-2024-0010,National Grid,Empire Excavation,Planned Upgrade,Suffolk,2023-04-23,2023-05-07,2023-07-05,Completed,True,1,3,Water
+PRG-2024-0011,Consolidated Gas,Consolidated Field Svcs,Service Install,Manhattan,2025-01-08,2025-01-20,2025-01-24,Completed,True,2,2,Water
+PRG-2024-0012,PSEG,Metro Civil Corp,Service Install,Queens,2025-01-06,2025-01-27,2025-02-06,Completed,True,0,2,Water
+PRG-2024-0013,PSEG,Empire Excavation,Main Repair,Brooklyn,2024-06-27,2024-07-02,2024-07-11,Completed,True,0,0,Civil
+PRG-2024-0014,PSEG,Consolidated Field Svcs,Valve Replacement,Staten Island,2025-01-19,2025-02-24,2025-03-04,Completed,False,1,0,Civil
+PRG-2024-0015,National Grid,Metro Civil Corp,Emergency Repair,Staten Island,2024-07-06,2024-08-28,2024-09-07,Completed,False,2,1,Civil
+PRG-2024-0016,Con Edison,XYZ Underground LLC,Main Repair,Brooklyn,2023-09-11,2023-09-30,,Open,True,8,1,Civil
+PRG-2024-0017,Consolidated Gas,Tri-State Utilities Inc,Service Install,Suffolk,2023-12-05,2023-12-14,2023-12-23,Completed,False,3,0,Gas
+PRG-2024-0018,Con Edison,Empire Excavation,Main Repair,Manhattan,2023-07-14,2023-07-25,,Open,False,5,3,Civil
+PRG-2024-0019,PSEG,Empire Excavation,Main Repair,Manhattan,2023-09-12,2023-09-29,,Open,True,2,3,Civil
+PRG-2024-0020,PSEG,XYZ Underground LLC,Emergency Repair,Bronx,2024-10-29,2024-12-07,2024-12-22,Completed,True,3,1,Gas
+PRG-2024-0021,Consolidated Gas,Empire Excavation,Service Install,Brooklyn,2023-01-03,2023-02-01,,In Progress,False,4,3,Civil
+PRG-2024-0022,PSEG,XYZ Underground LLC,Main Repair,Staten Island,2023-03-01,2023-04-12,2023-06-11,Completed,True,5,0,Civil
+PRG-2024-0023,PSEG,Metro Civil Corp,Planned Upgrade,Staten Island,2023-03-12,2023-04-24,,Open,True,3,0,Water
+PRG-2024-0024,PSEG,Consolidated Field Svcs,Valve Replacement,Manhattan,2023-03-25,2023-04-25,2023-04-30,Completed,True,2,1,Water
+PRG-2024-0025,Con Edison,XYZ Underground LLC,Main Repair,Staten Island,2024-10-22,2024-11-15,2024-12-03,Completed,True,0,3,Water
+PRG-2024-0026,National Grid,XYZ Underground LLC,Planned Upgrade,Suffolk,2023-09-29,2023-10-12,2023-12-09,Completed,True,3,2,Water
+PRG-2024-0027,PSEG,XYZ Underground LLC,Valve Replacement,Queens,2024-07-21,2024-08-14,2024-09-19,Completed,True,2,2,Water
+PRG-2024-0028,Con Edison,Tri-State Utilities Inc,Emergency Repair,Suffolk,2023-12-18,2024-01-05,2024-01-05,Completed,False,3,1,Civil
+PRG-2024-0029,Con Edison,Tri-State Utilities Inc,Main Repair,Bronx,2023-01-04,2023-01-30,2023-02-05,Completed,True,1,2,Water
+PRG-2024-0030,National Grid,Consolidated Field Svcs,Main Repair,Queens,2023-02-06,2023-04-05,,In Progress,True,1,1,Water
+PRG-2024-0031,PSEG,Consolidated Field Svcs,Service Install,Manhattan,2023-09-13,2023-10-30,,Open,True,3,2,Civil
+PRG-2024-0032,Con Edison,Empire Excavation,Emergency Repair,Suffolk,2025-01-24,2025-02-19,2025-05-04,Completed,True,3,2,Gas
+PRG-2024-0033,PSEG,Empire Excavation,Main Repair,Nassau,2023-08-16,2023-09-02,2023-09-09,Completed,True,5,2,Gas
+PRG-2024-0034,National Grid,Tri-State Utilities Inc,Main Repair,Bronx,2023-12-03,2023-12-25,2024-01-04,Completed,False,2,2,Civil
+PRG-2024-0035,Consolidated Gas,Consolidated Field Svcs,Planned Upgrade,Staten Island,2024-08-17,2024-09-07,,Open,True,3,1,Gas
+PRG-2024-0036,PSEG,Empire Excavation,Valve Replacement,Manhattan,2024-08-13,2024-08-30,,In Progress,True,0,4,Water
+PRG-2024-0037,National Grid,XYZ Underground LLC,Emergency Repair,Nassau,2023-12-05,2024-01-18,,In Progress,False,4,4,Water
+PRG-2024-0038,Con Edison,Empire Excavation,Valve Replacement,Queens,2023-05-11,2023-05-28,,In Progress,True,2,4,Gas
+PRG-2024-0039,Consolidated Gas,Empire Excavation,Service Install,Nassau,2024-08-16,2024-09-28,2024-10-14,Completed,True,7,3,Gas
+PRG-2024-0040,PSEG,Tri-State Utilities Inc,Service Install,Bronx,2024-06-11,2024-07-28,2024-07-31,Completed,True,0,0,Civil
+PRG-2024-0041,PSEG,XYZ Underground LLC,Emergency Repair,Manhattan,2024-05-01,2024-06-14,2024-07-02,Completed,False,7,3,Civil
+PRG-2024-0042,Consolidated Gas,XYZ Underground LLC,Main Repair,Staten Island,2023-06-01,2023-07-17,2023-09-29,Completed,True,6,1,Civil
+PRG-2024-0043,Consolidated Gas,Consolidated Field Svcs,Planned Upgrade,Manhattan,2024-04-12,2024-04-25,2024-05-03,Completed,True,2,1,Water
+PRG-2024-0044,National Grid,Metro Civil Corp,Emergency Repair,Bronx,2024-05-01,2024-06-03,,In Progress,False,2,2,Civil
+PRG-2024-0045,PSEG,Consolidated Field Svcs,Service Install,Bronx,2023-10-06,2023-11-01,,In Progress,False,0,0,Gas
+PRG-2024-0046,Con Edison,XYZ Underground LLC,Planned Upgrade,Manhattan,2023-12-05,2024-01-13,2024-04-01,Completed,False,3,3,Civil
+PRG-2024-0047,PSEG,Empire Excavation,Emergency Repair,Brooklyn,2023-12-27,2024-01-20,2024-02-08,Completed,False,8,5,Gas
+PRG-2024-0048,Con Edison,Empire Excavation,Emergency Repair,Staten Island,2024-05-12,2024-05-18,,In Progress,True,2,3,Civil
+PRG-2024-0049,PSEG,Empire Excavation,Emergency Repair,Queens,2024-10-20,2024-11-21,,Open,False,2,0,Gas
+PRG-2024-0050,Con Edison,Empire Excavation,Valve Replacement,Brooklyn,2023-10-12,2023-12-04,2023-12-21,Completed,True,4,0,Water
+PRG-2024-0051,PSEG,Metro Civil Corp,Emergency Repair,Nassau,2023-02-11,2023-04-05,,Open,True,1,0,Water
+PRG-2024-0052,PSEG,Tri-State Utilities Inc,Valve Replacement,Bronx,2023-08-12,2023-09-15,2023-09-16,Completed,True,1,2,Gas
+PRG-2024-0053,PSEG,Empire Excavation,Main Repair,Nassau,2024-08-12,2024-09-29,2024-12-05,Completed,False,6,5,Water
+PRG-2024-0054,National Grid,Consolidated Field Svcs,Main Repair,Staten Island,2024-09-06,2024-11-01,,Open,False,0,1,Civil
+PRG-2024-0055,PSEG,Empire Excavation,Emergency Repair,Brooklyn,2024-03-06,2024-05-02,2024-05-16,Completed,False,5,5,Water
+PRG-2024-0056,National Grid,Empire Excavation,Emergency Repair,Brooklyn,2024-07-05,2024-08-28,2024-08-30,Completed,False,4,2,Water
+PRG-2024-0057,National Grid,XYZ Underground LLC,Valve Replacement,Queens,2024-09-16,2024-11-02,,In Progress,False,7,2,Water
+PRG-2024-0058,Consolidated Gas,Consolidated Field Svcs,Planned Upgrade,Suffolk,2024-12-19,2025-01-10,2025-01-16,Completed,True,1,0,Water
+PRG-2024-0059,PSEG,Empire Excavation,Valve Replacement,Nassau,2024-05-02,2024-06-17,2024-08-11,Completed,False,0,0,Gas
+PRG-2024-0060,National Grid,Consolidated Field Svcs,Valve Replacement,Brooklyn,2024-07-20,2024-08-27,,In Progress,True,2,1,Water
+PRG-2024-0061,National Grid,Consolidated Field Svcs,Planned Upgrade,Suffolk,2023-07-17,2023-08-11,,Open,False,1,0,Civil
+PRG-2024-0062,National Grid,Metro Civil Corp,Main Repair,Bronx,2023-07-18,2023-08-10,,In Progress,False,2,0,Water
+PRG-2024-0063,Consolidated Gas,Empire Excavation,Emergency Repair,Queens,2023-05-10,2023-06-24,2023-07-09,Completed,True,1,0,Civil
+PRG-2024-0064,Con Edison,XYZ Underground LLC,Service Install,Brooklyn,2023-09-16,2023-11-15,2024-01-24,Completed,False,6,3,Civil
+PRG-2024-0065,Consolidated Gas,Empire Excavation,Valve Replacement,Suffolk,2023-09-12,2023-09-24,2023-12-21,Completed,False,3,4,Gas
+PRG-2024-0066,Con Edison,XYZ Underground LLC,Service Install,Brooklyn,2024-08-05,2024-09-18,,Open,True,3,5,Water
+PRG-2024-0067,National Grid,Empire Excavation,Emergency Repair,Bronx,2023-03-18,2023-04-02,,Open,True,7,2,Gas
+PRG-2024-0068,PSEG,Metro Civil Corp,Valve Replacement,Suffolk,2024-10-02,2024-11-13,2024-11-23,Completed,True,3,0,Civil
+PRG-2024-0069,Consolidated Gas,Consolidated Field Svcs,Valve Replacement,Staten Island,2023-03-03,2023-03-18,2023-03-22,Completed,False,2,1,Gas
+PRG-2024-0070,PSEG,Empire Excavation,Planned Upgrade,Staten Island,2023-03-24,2023-05-06,,Open,True,5,4,Water
+PRG-2024-0071,PSEG,Metro Civil Corp,Planned Upgrade,Manhattan,2023-10-03,2023-11-13,,Open,False,3,2,Civil
+PRG-2024-0072,National Grid,Tri-State Utilities Inc,Emergency Repair,Suffolk,2024-04-26,2024-05-23,,In Progress,True,0,0,Gas
+PRG-2024-0073,Consolidated Gas,XYZ Underground LLC,Emergency Repair,Bronx,2023-04-01,2023-04-26,,In Progress,True,6,4,Water
+PRG-2024-0074,National Grid,Empire Excavation,Emergency Repair,Nassau,2024-01-06,2024-02-19,2024-03-28,Completed,False,0,1,Civil
+PRG-2024-0075,Consolidated Gas,Metro Civil Corp,Main Repair,Brooklyn,2023-01-30,2023-03-16,2023-03-24,Completed,True,1,1,Gas
+PRG-2024-0076,Consolidated Gas,Empire Excavation,Emergency Repair,Brooklyn,2023-05-01,2023-06-16,2023-06-29,Completed,False,4,4,Water
+PRG-2024-0077,National Grid,Consolidated Field Svcs,Planned Upgrade,Queens,2023-05-29,2023-06-27,,Open,True,1,0,Gas
+PRG-2024-0078,National Grid,Consolidated Field Svcs,Valve Replacement,Staten Island,2025-01-13,2025-02-06,2025-02-13,Completed,False,3,0,Gas
+PRG-2024-0079,Con Edison,Metro Civil Corp,Valve Replacement,Nassau,2023-11-26,2024-01-25,,Open,False,3,0,Water
+PRG-2024-0080,National Grid,Metro Civil Corp,Main Repair,Suffolk,2024-01-26,2024-02-24,2024-03-04,Completed,False,3,0,Civil
+PRG-2024-0081,Consolidated Gas,Metro Civil Corp,Valve Replacement,Queens,2024-06-22,2024-07-26,,Open,False,3,2,Water
+PRG-2024-0082,Con Edison,Consolidated Field Svcs,Planned Upgrade,Bronx,2023-03-24,2023-05-22,,In Progress,True,3,1,Water
+PRG-2024-0083,Consolidated Gas,XYZ Underground LLC,Service Install,Nassau,2024-12-01,2024-12-24,2024-12-27,Completed,False,6,0,Civil
+PRG-2024-0084,Consolidated Gas,Tri-State Utilities Inc,Planned Upgrade,Nassau,2023-02-17,2023-03-14,2023-03-17,Completed,True,2,1,Civil
+PRG-2024-0085,PSEG,Empire Excavation,Emergency Repair,Nassau,2023-06-29,2023-07-09,2023-07-13,Completed,False,3,3,Gas
+PRG-2024-0086,Consolidated Gas,Empire Excavation,Valve Replacement,Staten Island,2023-09-19,2023-11-05,,Open,False,4,5,Water
+PRG-2024-0087,PSEG,Tri-State Utilities Inc,Emergency Repair,Staten Island,2024-03-10,2024-04-28,,In Progress,False,1,1,Water
+PRG-2024-0088,Consolidated Gas,Empire Excavation,Valve Replacement,Suffolk,2023-10-30,2023-12-18,,In Progress,True,4,0,Water
+PRG-2024-0089,PSEG,Consolidated Field Svcs,Main Repair,Nassau,2023-12-27,2024-01-15,2024-01-25,Completed,True,2,2,Gas
+PRG-2024-0090,PSEG,Metro Civil Corp,Service Install,Brooklyn,2024-03-27,2024-04-03,2024-04-09,Completed,False,0,1,Water
+PRG-2024-0091,Con Edison,Tri-State Utilities Inc,Emergency Repair,Bronx,2024-05-28,2024-06-19,2024-06-24,Completed,True,3,1,Civil
+PRG-2024-0092,Con Edison,Empire Excavation,Valve Replacement,Staten Island,2024-11-23,2025-01-13,2025-03-09,Completed,True,8,2,Gas
+PRG-2024-0093,PSEG,Tri-State Utilities Inc,Emergency Repair,Bronx,2024-01-13,2024-03-01,2024-03-02,Completed,False,3,2,Water
+PRG-2024-0094,Con Edison,Empire Excavation,Main Repair,Queens,2023-08-15,2023-09-30,,Open,False,4,5,Civil
+PRG-2024-0095,Consolidated Gas,Metro Civil Corp,Planned Upgrade,Nassau,2023-04-10,2023-04-30,2023-05-08,Completed,True,3,1,Gas
+PRG-2024-0096,PSEG,Consolidated Field Svcs,Emergency Repair,Manhattan,2024-11-01,2024-11-12,2024-12-23,Completed,True,3,1,Gas
+PRG-2024-0097,Consolidated Gas,Tri-State Utilities Inc,Main Repair,Nassau,2023-04-12,2023-05-30,,In Progress,True,0,1,Water
+PRG-2024-0098,PSEG,XYZ Underground LLC,Main Repair,Suffolk,2024-10-16,2024-11-28,2024-12-16,Completed,True,5,1,Water
+PRG-2024-0099,PSEG,Tri-State Utilities Inc,Service Install,Staten Island,2023-08-10,2023-10-06,2023-12-02,Completed,False,1,2,Civil
+PRG-2024-0100,National Grid,Metro Civil Corp,Main Repair,Brooklyn,2023-04-23,2023-06-09,2023-06-12,Completed,False,0,1,Civil
+PRG-2024-0101,Con Edison,XYZ Underground LLC,Emergency Repair,Staten Island,2023-05-10,2023-07-01,,In Progress,True,1,3,Water
+PRG-2024-0102,Con Edison,Consolidated Field Svcs,Emergency Repair,Suffolk,2023-02-14,2023-04-06,2023-04-06,Completed,False,2,1,Gas
+PRG-2024-0103,Con Edison,Empire Excavation,Service Install,Queens,2024-12-03,2024-12-14,2025-01-22,Completed,False,1,0,Gas
+PRG-2024-0104,PSEG,Consolidated Field Svcs,Emergency Repair,Manhattan,2024-09-03,2024-10-11,,In Progress,True,3,0,Gas
+PRG-2024-0105,National Grid,Empire Excavation,Service Install,Nassau,2023-12-14,2024-02-09,2024-02-17,Completed,False,1,2,Civil
+PRG-2024-0106,Con Edison,Empire Excavation,Planned Upgrade,Staten Island,2023-04-04,2023-06-01,,Open,False,1,5,Water
+PRG-2024-0107,Con Edison,Empire Excavation,Planned Upgrade,Staten Island,2023-05-06,2023-06-06,,In Progress,True,0,2,Civil
+PRG-2024-0108,National Grid,XYZ Underground LLC,Planned Upgrade,Brooklyn,2024-11-03,2024-12-08,,In Progress,False,5,4,Water
+PRG-2024-0109,Con Edison,Consolidated Field Svcs,Service Install,Queens,2024-09-28,2024-11-11,2024-11-15,Completed,False,0,2,Gas
+PRG-2024-0110,Con Edison,Metro Civil Corp,Main Repair,Nassau,2023-12-26,2023-12-31,,Open,True,3,0,Gas
+PRG-2024-0111,Con Edison,Tri-State Utilities Inc,Main Repair,Brooklyn,2024-03-05,2024-04-08,,In Progress,True,2,2,Water
+PRG-2024-0112,National Grid,Empire Excavation,Service Install,Suffolk,2023-02-20,2023-04-09,,Open,True,6,3,Gas
+PRG-2024-0113,PSEG,Consolidated Field Svcs,Emergency Repair,Staten Island,2024-03-16,2024-03-28,,In Progress,True,3,2,Civil
+PRG-2024-0114,Consolidated Gas,Metro Civil Corp,Emergency Repair,Brooklyn,2023-07-29,2023-08-22,2023-08-22,Completed,True,2,1,Gas
+PRG-2024-0115,Consolidated Gas,Consolidated Field Svcs,Main Repair,Manhattan,2024-06-29,2024-08-18,,In Progress,True,2,0,Gas
+PRG-2024-0116,PSEG,Empire Excavation,Planned Upgrade,Manhattan,2024-08-12,2024-09-13,2024-09-23,Completed,False,4,0,Civil
+PRG-2024-0117,National Grid,Empire Excavation,Valve Replacement,Brooklyn,2024-03-23,2024-05-21,,Open,False,6,4,Civil
+PRG-2024-0118,PSEG,Consolidated Field Svcs,Service Install,Bronx,2023-03-20,2023-04-26,2023-05-06,Completed,True,1,1,Gas
+PRG-2024-0119,Consolidated Gas,XYZ Underground LLC,Planned Upgrade,Nassau,2023-07-22,2023-08-07,2023-08-25,Completed,False,2,5,Water
+PRG-2024-0120,Con Edison,Empire Excavation,Valve Replacement,Staten Island,2023-11-20,2023-12-04,,In Progress,True,7,5,Gas
+PRG-2024-0121,Consolidated Gas,Tri-State Utilities Inc,Emergency Repair,Staten Island,2024-04-17,2024-05-20,,Open,True,2,0,Gas
+PRG-2024-0122,Consolidated Gas,Consolidated Field Svcs,Main Repair,Suffolk,2024-08-08,2024-09-23,,Open,False,3,2,Water
+PRG-2024-0123,PSEG,XYZ Underground LLC,Valve Replacement,Queens,2023-03-28,2023-05-04,2023-05-18,Completed,False,3,5,Gas
+PRG-2024-0124,National Grid,Consolidated Field Svcs,Main Repair,Staten Island,2024-02-23,2024-04-17,,In Progress,False,0,2,Gas
+PRG-2024-0125,PSEG,Consolidated Field Svcs,Valve Replacement,Queens,2023-09-16,2023-11-06,2023-12-27,Completed,False,1,1,Civil
+PRG-2024-0126,Con Edison,Tri-State Utilities Inc,Emergency Repair,Staten Island,2024-09-01,2024-10-21,2024-10-23,Completed,False,3,2,Civil
+PRG-2024-0127,PSEG,Metro Civil Corp,Main Repair,Queens,2024-01-07,2024-01-31,,Open,True,2,1,Water
+PRG-2024-0128,PSEG,Consolidated Field Svcs,Planned Upgrade,Manhattan,2024-07-06,2024-09-02,2024-09-11,Completed,True,0,2,Civil
+PRG-2024-0129,National Grid,Consolidated Field Svcs,Service Install,Manhattan,2023-07-05,2023-09-01,2023-09-07,Completed,False,1,2,Water
+PRG-2024-0130,Consolidated Gas,Tri-State Utilities Inc,Emergency Repair,Suffolk,2024-04-04,2024-04-23,2024-05-02,Completed,False,3,0,Gas
+PRG-2024-0131,Con Edison,Metro Civil Corp,Emergency Repair,Suffolk,2024-05-29,2024-07-06,,In Progress,False,1,2,Water
+PRG-2024-0132,Consolidated Gas,XYZ Underground LLC,Planned Upgrade,Brooklyn,2023-04-16,2023-06-05,2023-06-13,Completed,False,4,0,Civil
+PRG-2024-0133,National Grid,Tri-State Utilities Inc,Service Install,Manhattan,2023-08-16,2023-10-12,2023-11-27,Completed,True,0,1,Gas
+PRG-2024-0134,Consolidated Gas,XYZ Underground LLC,Service Install,Suffolk,2023-08-18,2023-08-24,,In Progress,False,5,1,Gas
+PRG-2024-0135,Consolidated Gas,XYZ Underground LLC,Main Repair,Suffolk,2024-09-22,2024-09-27,2024-10-14,Completed,False,4,1,Civil
+PRG-2024-0136,Consolidated Gas,Empire Excavation,Planned Upgrade,Staten Island,2023-11-05,2023-11-17,,Open,True,7,0,Water
+PRG-2024-0137,PSEG,Metro Civil Corp,Planned Upgrade,Manhattan,2024-06-11,2024-07-22,,In Progress,True,2,1,Water
+PRG-2024-0138,Con Edison,Tri-State Utilities Inc,Emergency Repair,Suffolk,2024-11-15,2024-11-25,2024-12-03,Completed,False,0,2,Civil
+PRG-2024-0139,PSEG,Tri-State Utilities Inc,Main Repair,Suffolk,2024-10-12,2024-11-10,2024-11-15,Completed,False,0,1,Civil
+PRG-2024-0140,PSEG,Metro Civil Corp,Main Repair,Nassau,2023-02-15,2023-03-14,2023-03-16,Completed,False,3,2,Civil
+PRG-2024-0141,Consolidated Gas,Metro Civil Corp,Planned Upgrade,Manhattan,2023-10-28,2023-11-14,,Open,False,0,1,Civil
+PRG-2024-0142,Consolidated Gas,XYZ Underground LLC,Emergency Repair,Nassau,2024-10-24,2024-11-10,,In Progress,False,5,2,Gas
+PRG-2024-0143,Consolidated Gas,Empire Excavation,Main Repair,Manhattan,2023-12-14,2023-12-30,2024-02-03,Completed,True,5,4,Water
+PRG-2024-0144,PSEG,Tri-State Utilities Inc,Emergency Repair,Queens,2023-10-28,2023-11-22,,Open,False,2,1,Civil
+PRG-2024-0145,Con Edison,Consolidated Field Svcs,Emergency Repair,Queens,2025-01-14,2025-03-15,2025-03-15,Completed,True,3,1,Civil
+PRG-2024-0146,National Grid,Empire Excavation,Valve Replacement,Manhattan,2023-05-27,2023-07-25,2023-10-12,Completed,True,0,1,Water
+PRG-2024-0147,PSEG,Tri-State Utilities Inc,Planned Upgrade,Queens,2023-06-07,2023-07-25,,In Progress,False,2,1,Gas
+PRG-2024-0148,Consolidated Gas,XYZ Underground LLC,Planned Upgrade,Bronx,2024-10-27,2024-11-18,,In Progress,False,0,5,Gas
+PRG-2024-0149,PSEG,Consolidated Field Svcs,Main Repair,Brooklyn,2024-12-21,2025-01-23,,In Progress,True,2,2,Gas
+PRG-2024-0150,National Grid,XYZ Underground LLC,Valve Replacement,Suffolk,2023-06-26,2023-08-15,,In Progress,True,5,5,Water
+PRG-2024-0151,PSEG,Tri-State Utilities Inc,Emergency Repair,Bronx,2024-12-27,2025-02-14,2025-02-16,Completed,False,1,0,Water
+PRG-2024-0152,National Grid,Consolidated Field Svcs,Emergency Repair,Nassau,2024-08-09,2024-09-06,2024-09-07,Completed,False,1,2,Water
+PRG-2024-0153,Con Edison,Consolidated Field Svcs,Emergency Repair,Manhattan,2024-02-25,2024-04-19,,In Progress,False,0,0,Civil
+PRG-2024-0154,Con Edison,Metro Civil Corp,Planned Upgrade,Brooklyn,2024-07-18,2024-09-01,2024-09-01,Completed,False,3,2,Civil
+PRG-2024-0155,National Grid,Metro Civil Corp,Service Install,Nassau,2023-06-15,2023-07-10,2023-07-11,Completed,False,2,2,Civil
+PRG-2024-0156,PSEG,XYZ Underground LLC,Service Install,Nassau,2024-10-02,2024-10-26,2025-01-24,Completed,False,8,5,Water
+PRG-2024-0157,PSEG,XYZ Underground LLC,Planned Upgrade,Manhattan,2023-02-12,2023-04-10,2023-04-18,Completed,True,0,5,Gas
+PRG-2024-0158,Consolidated Gas,Tri-State Utilities Inc,Valve Replacement,Manhattan,2024-10-04,2024-11-12,,In Progress,True,3,0,Water
+PRG-2024-0159,National Grid,Empire Excavation,Valve Replacement,Nassau,2023-03-03,2023-03-18,,In Progress,False,7,1,Gas
+PRG-2024-0160,National Grid,Consolidated Field Svcs,Emergency Repair,Brooklyn,2023-05-14,2023-07-06,,In Progress,True,0,1,Civil
+PRG-2024-0161,National Grid,Consolidated Field Svcs,Planned Upgrade,Nassau,2023-02-21,2023-03-16,2023-03-18,Completed,False,3,0,Civil
+PRG-2024-0162,Consolidated Gas,Empire Excavation,Planned Upgrade,Manhattan,2023-06-13,2023-07-19,2023-07-21,Completed,True,7,2,Civil
+PRG-2024-0163,Consolidated Gas,Tri-State Utilities Inc,Valve Replacement,Staten Island,2024-08-20,2024-09-16,,Open,True,3,2,Civil
+PRG-2024-0164,PSEG,Tri-State Utilities Inc,Valve Replacement,Staten Island,2024-03-17,2024-03-30,2024-04-30,Completed,False,3,1,Civil
+PRG-2024-0165,PSEG,Consolidated Field Svcs,Main Repair,Manhattan,2024-01-31,2024-03-08,2024-03-09,Completed,False,2,2,Gas
+PRG-2024-0166,PSEG,Metro Civil Corp,Valve Replacement,Suffolk,2024-07-25,2024-08-22,2024-09-22,Completed,False,3,2,Water
+PRG-2024-0167,PSEG,Consolidated Field Svcs,Emergency Repair,Staten Island,2024-04-12,2024-04-26,2024-05-01,Completed,False,1,1,Water
+PRG-2024-0168,Con Edison,Consolidated Field Svcs,Valve Replacement,Queens,2023-12-11,2024-01-17,2024-01-24,Completed,True,3,2,Gas
+PRG-2024-0169,PSEG,XYZ Underground LLC,Main Repair,Staten Island,2024-08-20,2024-09-13,2024-10-01,Completed,False,7,2,Civil
+PRG-2024-0170,Con Edison,Empire Excavation,Service Install,Bronx,2024-06-20,2024-08-04,2024-10-09,Completed,False,2,5,Gas
+PRG-2024-0171,Con Edison,Metro Civil Corp,Service Install,Staten Island,2024-03-04,2024-03-18,,In Progress,True,3,2,Water
+PRG-2024-0172,National Grid,Empire Excavation,Planned Upgrade,Queens,2023-11-29,2024-01-15,2024-02-01,Completed,False,5,1,Water
+PRG-2024-0173,National Grid,Tri-State Utilities Inc,Service Install,Nassau,2024-05-10,2024-05-27,2024-05-31,Completed,False,2,0,Gas
+PRG-2024-0174,Consolidated Gas,Tri-State Utilities Inc,Emergency Repair,Suffolk,2024-05-06,2024-06-02,2024-06-10,Completed,False,2,0,Civil
+PRG-2024-0175,PSEG,XYZ Underground LLC,Service Install,Suffolk,2023-10-25,2023-11-01,,In Progress,False,5,3,Water
+PRG-2024-0176,PSEG,Consolidated Field Svcs,Service Install,Bronx,2024-12-13,2025-01-04,,Open,True,1,0,Gas
+PRG-2024-0177,Consolidated Gas,Metro Civil Corp,Emergency Repair,Manhattan,2023-12-05,2024-01-24,2024-01-26,Completed,True,0,2,Gas
+PRG-2024-0178,PSEG,XYZ Underground LLC,Emergency Repair,Suffolk,2023-11-25,2023-12-18,2023-12-19,Completed,True,3,4,Civil
+PRG-2024-0179,Con Edison,Tri-State Utilities Inc,Valve Replacement,Queens,2024-02-11,2024-04-06,2024-04-15,Completed,False,0,0,Water
+PRG-2024-0180,National Grid,Metro Civil Corp,Service Install,Nassau,2024-07-10,2024-08-17,2024-08-18,Completed,False,3,1,Water
+PRG-2024-0181,PSEG,Tri-State Utilities Inc,Planned Upgrade,Suffolk,2023-09-21,2023-11-10,,Open,False,2,2,Gas
+PRG-2024-0182,Con Edison,XYZ Underground LLC,Valve Replacement,Manhattan,2024-06-11,2024-07-06,,Open,True,2,1,Gas
+PRG-2024-0183,Con Edison,Consolidated Field Svcs,Main Repair,Manhattan,2023-10-01,2023-10-27,,In Progress,False,0,1,Civil
+PRG-2024-0184,National Grid,Tri-State Utilities Inc,Planned Upgrade,Brooklyn,2024-02-20,2024-04-08,2024-04-12,Completed,True,0,2,Civil
+PRG-2024-0185,PSEG,Consolidated Field Svcs,Service Install,Nassau,2024-05-04,2024-05-18,2024-05-25,Completed,True,2,1,Water
+PRG-2024-0186,PSEG,XYZ Underground LLC,Planned Upgrade,Staten Island,2024-04-02,2024-05-10,2024-05-26,Completed,True,1,0,Civil
+PRG-2024-0187,Consolidated Gas,XYZ Underground LLC,Main Repair,Manhattan,2023-12-02,2024-01-30,2024-02-01,Completed,True,3,5,Water
+PRG-2024-0188,Consolidated Gas,Consolidated Field Svcs,Valve Replacement,Suffolk,2024-03-01,2024-04-04,2024-04-04,Completed,True,3,2,Water
+PRG-2024-0189,Con Edison,Empire Excavation,Emergency Repair,Bronx,2023-08-12,2023-09-23,,Open,False,5,5,Gas
+PRG-2024-0190,Consolidated Gas,Empire Excavation,Main Repair,Nassau,2023-07-04,2023-08-27,,Open,True,5,3,Water
+PRG-2024-0191,Con Edison,Consolidated Field Svcs,Main Repair,Queens,2023-12-23,2024-01-04,,Open,False,3,2,Water
+PRG-2024-0192,National Grid,Empire Excavation,Service Install,Nassau,2025-01-06,2025-02-14,,In Progress,True,3,1,Civil
+PRG-2024-0193,Con Edison,XYZ Underground LLC,Emergency Repair,Staten Island,2024-11-07,2024-12-08,2025-02-14,Completed,True,3,1,Civil
+PRG-2024-0194,PSEG,Metro Civil Corp,Planned Upgrade,Queens,2025-01-28,2025-02-04,,In Progress,False,1,0,Civil
+PRG-2024-0195,PSEG,Consolidated Field Svcs,Emergency Repair,Staten Island,2023-11-06,2023-11-20,2023-11-20,Completed,False,1,1,Civil
+PRG-2024-0196,National Grid,Consolidated Field Svcs,Emergency Repair,Brooklyn,2023-12-19,2024-02-03,2024-02-05,Completed,False,2,2,Civil
+PRG-2024-0197,PSEG,Metro Civil Corp,Emergency Repair,Brooklyn,2023-08-19,2023-09-12,2023-09-18,Completed,False,3,0,Civil
+PRG-2024-0198,Con Edison,Empire Excavation,Valve Replacement,Manhattan,2023-12-05,2024-01-20,,Open,True,5,0,Civil
+PRG-2024-0199,National Grid,Consolidated Field Svcs,Main Repair,Brooklyn,2023-07-12,2023-09-06,2023-09-11,Completed,True,1,1,Water
+PRG-2024-0200,Consolidated Gas,Empire Excavation,Service Install,Staten Island,2023-05-01,2023-06-22,2023-06-28,Completed,False,3,5,Gas
+PRG-BAD-001,Con Edison,XYZ Underground LLC,Main Repair,Bronx,2024-12-01,2024-11-01,,Open,True,-1,0,Civil
+,PSEG,Metro Civil Corp,Valve Replacement,Queens,not-a-date,2025-01-15,,In Progress,False,0,0,Water
