@@ -5,6 +5,16 @@ before they escalate. Flags delays, compliance issues, and contractor patterns.
 
 ---
 
+## Git Setup
+
+Configure the default branch name to avoid the `master` branch warning:
+
+```bash
+git config --global init.defaultBranch main
+```
+
+---
+
 ## Quick Start
 
 ```bash
