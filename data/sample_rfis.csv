@@ -1,61 +1,61 @@
 rfi_id,job_id,subject,submitted_date,answered_date,status,days_open,response_days,submitted_by
-RFI-0001,PRG-2024-0052,Utility conflict at station 12+50,2024-10-06,,Open,497,,Field
-RFI-0002,PRG-2024-0032,Material substitution request,2024-08-04,2024-08-14,Answered,0,10,Contractor
-RFI-0003,PRG-2024-0069,Drawing inconsistency - sheet C-4,2024-07-23,2024-08-09,Closed,0,17,Office
-RFI-0004,PRG-2024-0079,Traffic control plan approval,2024-11-28,,Open,444,,Office
-RFI-0005,PRG-2024-0028,Backfill compaction requirements,2024-08-08,2024-08-15,Answered,0,7,Office
-RFI-0006,PRG-2024-0011,Soil condition discrepancy,2024-12-31,2025-01-26,Answered,0,26,Office
-RFI-0007,PRG-2024-0041,Trench width specification,2024-10-12,,Open,491,,Field
-RFI-0008,PRG-2024-0055,Trench width specification,2024-08-22,,Open,542,,Field
-RFI-0009,PRG-2024-0060,Inspection hold point clarification,2024-11-10,2024-12-01,Closed,0,21,Field
-RFI-0010,PRG-2024-0046,Utility conflict at station 12+50,2024-08-03,,Open,561,,Contractor
-RFI-0011,PRG-2024-0057,Trench width specification,2024-11-30,2024-12-07,Closed,0,7,Contractor
-RFI-0012,PRG-2024-0023,Utility conflict at station 12+50,2024-07-10,,Open,585,,Office
-RFI-0013,PRG-2024-0054,Soil condition discrepancy,2024-07-21,2024-08-12,Closed,0,22,Field
-RFI-0014,PRG-2024-0040,Traffic control plan approval,2024-12-06,,Open,436,,Field
-RFI-0015,PRG-2024-0067,Clarification on pipe depth requirement,2024-10-12,,Open,491,,Contractor
-RFI-0016,PRG-2024-0028,Material substitution request,2024-10-22,,Open,481,,Field
-RFI-0017,PRG-2024-0046,Utility conflict at station 12+50,2024-12-25,2024-12-28,Answered,0,3,Contractor
-RFI-0018,PRG-2024-0077,Material substitution request,2025-01-16,2025-02-06,Answered,0,21,Field
-RFI-0019,PRG-2024-0013,Utility conflict at station 12+50,2024-07-31,,Open,564,,Field
-RFI-0020,PRG-2024-0053,Trench width specification,2024-08-07,2024-09-06,Closed,0,30,Office
-RFI-0021,PRG-2024-0064,Markout boundary question,2025-01-21,,Open,390,,Field
-RFI-0022,PRG-2024-0047,Markout boundary question,2024-08-17,2024-09-04,Answered,0,18,Field
-RFI-0023,PRG-2024-0075,Drawing inconsistency - sheet C-4,2025-01-30,,Open,381,,Office
-RFI-0024,PRG-2024-0052,Material substitution request,2024-09-25,2024-10-09,Closed,0,14,Office
-RFI-0025,PRG-2024-0048,Clarification on pipe depth requirement,2024-11-14,,Open,458,,Office
-RFI-0026,PRG-2024-0052,Drawing inconsistency - sheet C-4,2025-01-14,2025-01-25,Answered,0,11,Contractor
-RFI-0027,PRG-2024-0040,Traffic control plan approval,2024-07-28,2024-08-22,Closed,0,25,Field
-RFI-0028,PRG-2024-0032,Soil condition discrepancy,2024-10-07,,Open,496,,Office
-RFI-0029,PRG-2024-0054,Markout boundary question,2024-09-04,,Open,529,,Contractor
-RFI-0030,PRG-2024-0042,Markout boundary question,2025-01-18,2025-01-24,Answered,0,6,Office
-RFI-0031,PRG-2024-0038,Backfill compaction requirements,2024-10-13,2024-11-10,Closed,0,28,Field
-RFI-0032,PRG-2024-0037,Backfill compaction requirements,2024-10-06,2024-10-27,Answered,0,21,Contractor
-RFI-0033,PRG-2024-0057,Drawing inconsistency - sheet C-4,2024-08-19,,Open,545,,Office
-RFI-0034,PRG-2024-0001,Markout boundary question,2024-12-18,,Open,424,,Field
-RFI-0035,PRG-2024-0022,Material substitution request,2025-01-19,2025-02-11,Answered,0,23,Contractor
-RFI-0036,PRG-2024-0030,Material substitution request,2024-10-13,2024-10-26,Closed,0,13,Field
-RFI-0037,PRG-2024-0015,Trench width specification,2024-11-06,2024-11-08,Answered,0,2,Office
-RFI-0038,PRG-2024-0022,Drawing inconsistency - sheet C-4,2024-11-08,2024-11-24,Answered,0,16,Office
-RFI-0039,PRG-2024-0054,Backfill compaction requirements,2024-10-28,2024-11-19,Answered,0,22,Contractor
-RFI-0040,PRG-2024-0078,Clarification on pipe depth requirement,2025-01-13,,Open,398,,Field
-RFI-0041,PRG-2024-0040,Material substitution request,2024-07-20,2024-07-23,Answered,0,3,Office
-RFI-0042,PRG-2024-0048,Backfill compaction requirements,2024-11-20,2024-12-14,Answered,0,24,Contractor
-RFI-0043,PRG-2024-0038,Material substitution request,2024-08-19,2024-09-17,Answered,0,29,Office
-RFI-0044,PRG-2024-0023,Utility conflict at station 12+50,2024-09-06,2024-09-12,Answered,0,6,Office
-RFI-0045,PRG-2024-0050,Utility conflict at station 12+50,2024-10-16,2024-11-09,Answered,0,24,Office
-RFI-0046,PRG-2024-0033,Backfill compaction requirements,2024-08-23,,Open,541,,Contractor
-RFI-0047,PRG-2024-0049,Backfill compaction requirements,2024-08-17,2024-09-03,Closed,0,17,Contractor
-RFI-0048,PRG-2024-0061,Soil condition discrepancy,2024-12-18,,Open,424,,Contractor
-RFI-0049,PRG-2024-0031,Traffic control plan approval,2024-10-26,2024-10-31,Answered,0,5,Office
-RFI-0050,PRG-2024-0010,Backfill compaction requirements,2024-09-24,2024-09-26,Answered,0,2,Contractor
-RFI-0051,PRG-2024-0069,Traffic control plan approval,2024-09-09,2024-09-29,Answered,0,20,Office
-RFI-0052,PRG-2024-0034,Clarification on pipe depth requirement,2024-08-12,,Open,552,,Office
-RFI-0053,PRG-2024-0005,Drawing inconsistency - sheet C-4,2024-07-13,,Open,582,,Contractor
-RFI-0054,PRG-2024-0038,Material substitution request,2024-08-10,2024-08-13,Closed,0,3,Field
-RFI-0055,PRG-2024-0025,Markout boundary question,2024-07-30,2024-08-09,Answered,0,10,Contractor
-RFI-0056,PRG-2024-0047,Trench width specification,2024-07-19,2024-07-27,Answered,0,8,Field
-RFI-0057,PRG-2024-0046,Soil condition discrepancy,2024-12-15,2025-01-03,Closed,0,19,Contractor
-RFI-0058,PRG-2024-0015,Utility conflict at station 12+50,2025-01-02,,Open,409,,Field
-RFI-0059,PRG-2024-0070,Trench width specification,2024-07-23,,Open,572,,Contractor
-RFI-0060,PRG-2024-0049,Drawing inconsistency - sheet C-4,2024-08-12,,Open,552,,Contractor
+RFI-0001,PRG-2024-0104,Utility conflict at station 12+50,2024-10-06,,Open,505,,Field
+RFI-0002,PRG-2024-0064,Material substitution request,2024-08-04,2024-08-14,Answered,0,10,Contractor
+RFI-0003,PRG-2024-0176,Inspection hold point clarification,2024-12-27,2025-01-17,Answered,0,21,Field
+RFI-0004,PRG-2024-0108,Traffic control plan approval,2025-01-01,2025-01-09,Answered,0,8,Office
+RFI-0005,PRG-2024-0175,Utility conflict at station 12+50,2024-08-24,,Open,548,,Contractor
+RFI-0006,PRG-2024-0087,Soil condition discrepancy,2024-07-22,2024-08-09,Closed,0,18,Office
+RFI-0007,PRG-2024-0081,Trench width specification,2024-10-12,,Open,499,,Field
+RFI-0008,PRG-2024-0109,Trench width specification,2024-08-22,,Open,550,,Field
+RFI-0009,PRG-2024-0119,Inspection hold point clarification,2024-11-10,2024-12-01,Closed,0,21,Field
+RFI-0010,PRG-2024-0092,Utility conflict at station 12+50,2024-08-03,,Open,569,,Contractor
+RFI-0011,PRG-2024-0114,Trench width specification,2024-11-30,2024-12-07,Closed,0,7,Contractor
+RFI-0012,PRG-2024-0046,Utility conflict at station 12+50,2024-07-10,,Open,593,,Office
+RFI-0013,PRG-2024-0176,Soil condition discrepancy,2025-01-26,2025-02-10,Answered,0,15,Field
+RFI-0014,PRG-2024-0080,Traffic control plan approval,2024-12-06,,Open,444,,Field
+RFI-0015,PRG-2024-0134,Clarification on pipe depth requirement,2024-10-12,,Open,499,,Contractor
+RFI-0016,PRG-2024-0055,Material substitution request,2024-10-22,,Open,489,,Field
+RFI-0017,PRG-2024-0091,Utility conflict at station 12+50,2024-12-25,2024-12-28,Answered,0,3,Contractor
+RFI-0018,PRG-2024-0184,Backfill compaction requirements,2024-12-01,2024-12-07,Answered,0,6,Office
+RFI-0019,PRG-2024-0032,Markout boundary question,2024-07-25,,Open,578,,Field
+RFI-0020,PRG-2024-0046,Drawing inconsistency - sheet C-4,2024-10-13,,Open,498,,Contractor
+RFI-0021,PRG-2024-0082,Markout boundary question,2025-01-14,2025-01-23,Answered,0,9,Field
+RFI-0022,PRG-2024-0093,Markout boundary question,2024-08-17,2024-09-04,Answered,0,18,Field
+RFI-0023,PRG-2024-0150,Drawing inconsistency - sheet C-4,2025-01-30,,Open,389,,Office
+RFI-0024,PRG-2024-0103,Material substitution request,2024-09-25,2024-10-09,Closed,0,14,Office
+RFI-0025,PRG-2024-0095,Clarification on pipe depth requirement,2024-11-14,,Open,466,,Office
+RFI-0026,PRG-2024-0185,Markout boundary question,2024-10-11,2024-10-20,Answered,0,9,Contractor
+RFI-0027,PRG-2024-0058,Traffic control plan approval,2024-12-15,2024-12-20,Answered,0,5,Field
+RFI-0028,PRG-2024-0196,Drawing inconsistency - sheet C-4,2025-01-24,2025-02-17,Answered,0,24,Office
+RFI-0029,PRG-2024-0076,Inspection hold point clarification,2024-10-21,2024-10-25,Answered,0,4,Office
+RFI-0030,PRG-2024-0066,Traffic control plan approval,2024-07-18,2024-08-10,Answered,0,23,Office
+RFI-0031,PRG-2024-0137,Material substitution request,2024-08-02,2024-08-12,Closed,0,10,Office
+RFI-0032,PRG-2024-0105,Markout boundary question,2024-12-16,2024-12-23,Closed,0,7,Office
+RFI-0033,PRG-2024-0174,Inspection hold point clarification,2024-12-21,2025-01-11,Answered,0,21,Field
+RFI-0034,PRG-2024-0098,Clarification on pipe depth requirement,2024-09-25,2024-10-08,Closed,0,13,Contractor
+RFI-0035,PRG-2024-0091,Drawing inconsistency - sheet C-4,2024-12-25,,Open,425,,Contractor
+RFI-0036,PRG-2024-0171,Material substitution request,2024-08-13,2024-08-23,Answered,0,10,Contractor
+RFI-0037,PRG-2024-0193,Traffic control plan approval,2024-12-28,,Open,422,,Contractor
+RFI-0038,PRG-2024-0103,Trench width specification,2024-07-01,,Open,602,,Field
+RFI-0039,PRG-2024-0001,Utility conflict at station 12+50,2024-11-11,,Open,469,,Contractor
+RFI-0040,PRG-2024-0114,Material substitution request,2024-08-22,,Open,550,,Office
+RFI-0041,PRG-2024-0144,Backfill compaction requirements,2024-11-13,2024-12-09,Answered,0,26,Office
+RFI-0042,PRG-2024-0052,Soil condition discrepancy,2025-01-06,,Open,413,,Office
+RFI-0043,PRG-2024-0020,Clarification on pipe depth requirement,2024-11-26,,Open,454,,Office
+RFI-0044,PRG-2024-0077,Backfill compaction requirements,2024-10-03,2024-10-25,Closed,0,22,Contractor
+RFI-0045,PRG-2024-0076,Material substitution request,2024-08-19,2024-09-17,Answered,0,29,Office
+RFI-0046,PRG-2024-0045,Utility conflict at station 12+50,2024-09-06,2024-09-12,Answered,0,6,Office
+RFI-0047,PRG-2024-0178,Trench width specification,2024-12-27,,Open,423,,Contractor
+RFI-0048,PRG-2024-0046,Markout boundary question,2024-10-01,,Open,510,,Office
+RFI-0049,PRG-2024-0147,Inspection hold point clarification,2024-12-27,,Open,423,,Contractor
+RFI-0050,PRG-2024-0161,Trench width specification,2024-10-30,2024-11-03,Answered,0,4,Field
+RFI-0051,PRG-2024-0118,Traffic control plan approval,2024-11-11,,Open,469,,Office
+RFI-0052,PRG-2024-0019,Backfill compaction requirements,2024-09-24,2024-09-26,Answered,0,2,Contractor
+RFI-0053,PRG-2024-0137,Traffic control plan approval,2024-09-09,2024-09-29,Answered,0,20,Office
+RFI-0054,PRG-2024-0067,Clarification on pipe depth requirement,2024-08-12,,Open,560,,Office
+RFI-0055,PRG-2024-0010,Drawing inconsistency - sheet C-4,2024-07-13,,Open,590,,Contractor
+RFI-0056,PRG-2024-0194,Inspection hold point clarification,2024-09-13,,Open,528,,Field
+RFI-0057,PRG-2024-0179,Drawing inconsistency - sheet C-4,2025-01-15,2025-02-11,Answered,0,27,Field
+RFI-0058,PRG-2024-0125,Traffic control plan approval,2024-08-13,,Open,559,,Field
+RFI-0059,PRG-2024-0144,Traffic control plan approval,2024-08-20,2024-08-27,Answered,0,7,Contractor
+RFI-0060,PRG-2024-0137,Utility conflict at station 12+50,2024-07-21,2024-07-26,Answered,0,5,Field
