@@ -435,7 +435,7 @@ def update_email_settings():
     if not updates:
         return jsonify({'error': 'No data provided'}), 400
     cfg = load_config()
-    for key in ('recipients', 'send_day', 'send_time', 'enabled'):
+    for key in ('recipients', 'send_day', 'send_time', 'enabled', 'smtp_user', 'smtp_pass'):
         if key in updates:
             cfg[key] = updates[key]
     save_config(cfg)

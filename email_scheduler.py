@@ -21,6 +21,8 @@ DEFAULT_CONFIG = {
     "send_time": "08:00",
     "enabled": False,
     "last_sent": None,
+    "smtp_user": "",
+    "smtp_pass": "",
 }
 
 # ── Config helpers ─────────────────────────────────────────────────────────────
@@ -230,11 +232,12 @@ def send_weekly_email(recipients: List[str], data: dict) -> dict:
     """
     smtp_host = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
     smtp_port = int(os.environ.get('SMTP_PORT', 587))
-    smtp_user = os.environ.get('SMTP_USER', '')
-    smtp_pass = os.environ.get('SMTP_PASS', '')
+    cfg = load_config()
+    smtp_user = cfg.get('smtp_user') or os.environ.get('SMTP_USER', '')
+    smtp_pass = cfg.get('smtp_pass') or os.environ.get('SMTP_PASS', '')
 
     if not smtp_user or not smtp_pass:
-        return {'sent': [], 'failed': recipients, 'errors': ['SMTP_USER / SMTP_PASS not set']}
+        return {'sent': [], 'failed': recipients, 'errors': ['Gmail address and app password not configured — go to Settings → Email Reports']}
 
     html_body = generate_weekly_report(data)
     subject   = f"Weekly Risk Report — {date.today().strftime('%B %d, %Y')}"
