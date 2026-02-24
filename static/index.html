@@ -688,9 +688,12 @@ document.getElementById('btn-connect-sheets')?.addEventListener('click', async (
         const result = await status.json();
         if (result.connected) {
           clearInterval(poll);
+          clearTimeout(pollTimeout);
           checkSheetsConnection();
         }
       }, 2000);
+      // Stop polling after 5 minutes regardless
+      const pollTimeout = setTimeout(() => clearInterval(poll), 5 * 60 * 1000);
     }
   } catch(e) { alert('Connection failed: ' + e.message); }
 });

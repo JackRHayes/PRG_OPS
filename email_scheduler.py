@@ -264,10 +264,11 @@ def send_weekly_email(recipients: List[str], data: dict) -> dict:
         errors = [str(e)]
         logger.error(f"[EMAIL] SMTP connection failed: {e}")
 
-    # Update last_sent in config
-    cfg = load_config()
-    cfg['last_sent'] = datetime.now().isoformat()
-    save_config(cfg)
+    # Only update last_sent if at least one email was sent successfully
+    if sent:
+        cfg = load_config()
+        cfg['last_sent'] = datetime.now().isoformat()
+        save_config(cfg)
 
     return {'sent': sent, 'failed': failed, 'errors': errors}
 

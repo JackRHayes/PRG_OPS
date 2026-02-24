@@ -8,7 +8,7 @@ from datetime import date, timedelta
 
 random.seed(77)
 
-JOB_IDS = [f"PRG-2024-{str(i).zfill(4)}" for i in range(1, 81)]
+JOB_IDS = [f"PRG-2024-{str(i).zfill(4)}" for i in range(1, 201)]
 
 PERMIT_TYPES = [
     "Excavation",
