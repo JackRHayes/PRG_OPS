@@ -177,6 +177,22 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
   <div class="tab-content active" id="tab-overview">
     <div class="content">
       <div class="kpi-grid" id="kpi-grid"></div>
+
+      <!-- Trend comparison -->
+      <div id="trend-section" style="display:none;margin-bottom:2rem">
+        <div class="section-header" style="margin-bottom:1rem">
+          <div class="section-title">Changes Since Last Run</div>
+          <span id="trend-meta" style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)"></span>
+        </div>
+        <div class="kpi-grid" id="trend-kpi-grid" style="margin-bottom:1rem"></div>
+        <div id="trend-table-wrap" class="table-wrap" style="display:none">
+          <div style="overflow-x:auto">
+            <table><thead><tr><th>Job ID</th><th>Contractor</th><th>Scope</th><th>Region</th><th>Previous</th><th>Now</th><th>Score Δ</th></tr></thead>
+            <tbody id="trend-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
       <div class="charts-grid">
         <div class="chart-card"><div class="chart-title">Risk Level Breakdown</div><div class="chart-wrap"><canvas id="chart-risk"></canvas></div></div>
         <div class="chart-card"><div class="chart-title">Avg Delay by Contractor (days)</div><div class="chart-wrap"><canvas id="chart-delay"></canvas></div></div>
@@ -506,6 +522,7 @@ function renderDashboard(data) {
   renderRFI(data);
   renderPermits(data);
   renderContractors(data.ranked_contractors);
+  loadTrends(data);
   document.getElementById('upload-screen').style.display='none';
   document.getElementById('dashboard').style.display='block';
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -629,7 +646,7 @@ function renderJobsTable(jobs) {
     const mlPredCell = mlLevel==null
       ? `<td style="color:var(--muted);font-family:var(--font-mono);font-size:.72rem">—</td>`
       : `<td><span class="risk-pill risk-${mlLevel}" title="${mlDays}d expected · ${mlConf} confidence">${mlLevel}<span style="opacity:.6;margin-left:.3rem">${mlDays}d</span></span></td>`;
-    return `<tr><td style="color:var(--accent);font-weight:500">${j.job_id}</td><td>${j.contractor}</td><td style="color:var(--muted)">${j.scope_type}</td><td style="color:var(--muted)">${j.region}</td><td>${j.actual_duration_days||0}</td><td style="color:${j.delay_days>0?'var(--red)':'var(--muted)'}">${j.delay_days||0}d</td><td>${j.markout_issues||0}</td><td>${j.inspections_failed||0}</td><td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${bc}"></div></div><span class="score-num">${j.risk_score}</span></div></td><td><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>${mlProbCell}${mlPredCell}<td><div class="reasons-text">${j.risk_reasons||'—'}</div></td></tr>`;
+    return `<tr data-job-id="${j.job_id}" style="cursor:pointer"><td style="color:var(--accent);font-weight:500">${j.job_id}</td><td>${j.contractor}</td><td style="color:var(--muted)">${j.scope_type}</td><td style="color:var(--muted)">${j.region}</td><td>${j.actual_duration_days||0}</td><td style="color:${j.delay_days>0?'var(--red)':'var(--muted)'}">${j.delay_days||0}d</td><td>${j.markout_issues||0}</td><td>${j.inspections_failed||0}</td><td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${bc}"></div></div><span class="score-num">${j.risk_score}</span></div></td><td><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>${mlProbCell}${mlPredCell}<td><div class="reasons-text">${j.risk_reasons||'—'}</div></td></tr>`;
   }).join('');
 }
 
@@ -735,6 +752,179 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
   a.click();
   URL.revokeObjectURL(url);
 });
+
+// ── Job Detail Modal ─────────────────────────────────────────────────────────
+document.getElementById('jobs-tbody').addEventListener('click', e => {
+  const row = e.target.closest('tr[data-job-id]');
+  if (!row || !globalData) return;
+  const job = globalData.scored_jobs.find(j => j.job_id === row.dataset.jobId);
+  if (job) showJobModal(job);
+});
+
+function showJobModal(job) {
+  document.getElementById('jm-title').textContent = job.job_id + ' — ' + job.contractor;
+  document.getElementById('jm-risk-pill').innerHTML = `<span class="risk-pill risk-${job.risk_level}">${job.risk_level}</span>`;
+
+  const permitInfo = (globalData.permits_by_job || {})[job.job_id] || null;
+  const rfiInfo    = (globalData.rfi_by_job    || {})[job.job_id] || null;
+  const subInfo    = (globalData.sub_by_job    || {})[job.job_id] || null;
+
+  function row(label, value, color) {
+    return `<div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid rgba(30,35,48,.5)">
+      <span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">${label}</span>
+      <span style="font-family:var(--font-mono);font-size:.72rem;color:${color||'var(--text)'};font-weight:500">${value??'—'}</span>
+    </div>`;
+  }
+  function section(title, html) {
+    return `<div style="margin-bottom:1.25rem">
+      <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)">${title}</div>
+      ${html}
+    </div>`;
+  }
+
+  const mlProb = job.ml_delay_probability;
+  const mlColor = mlProb==null?'var(--muted)':mlProb>=60?'var(--red)':mlProb>=30?'var(--amber)':'var(--green)';
+
+  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+  <div>
+    ${section('Job Info',
+      row('Scope', job.scope_type) +
+      row('Region', job.region) +
+      row('Status', job.status) +
+      row('Crew Type', job.crew_type)
+    )}
+    ${section('Schedule',
+      row('Start Date', job.start_date) +
+      row('Planned End', job.planned_end_date) +
+      row('Actual End', job.actual_end_date || 'In Progress') +
+      row('Planned Duration', (job.planned_duration_days||0) + 'd') +
+      row('Actual Duration', (job.actual_duration_days||0) + 'd') +
+      row('Delay', job.delay_days > 0 ? job.delay_days + 'd (' + job.delay_pct + '%)' : 'None', job.delay_days > 0 ? 'var(--red)' : 'var(--green)')
+    )}
+    ${section('Compliance',
+      row('Markout Required', job.markout_required ? 'Yes' : 'No') +
+      row('Markout Issues', job.markout_issues||0, job.markout_issues > 0 ? 'var(--amber)' : 'var(--muted)') +
+      row('Inspections Failed', job.inspections_failed||0, job.inspections_failed > 0 ? 'var(--red)' : 'var(--muted)')
+    )}
+  </div>
+  <div>
+    ${section('Risk Assessment',
+      row('Risk Score', job.risk_score, 'var(--accent)') +
+      row('Contractor Risk Factor', job.contractor_risk_factor) +
+      `<div style="padding:.45rem 0;border-bottom:1px solid rgba(30,35,48,.5)">
+        <div style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Risk Reasons</div>
+        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--text);line-height:1.5">${job.risk_reasons||'—'}</div>
+      </div>`
+    )}
+    ${section('ML Prediction',
+      mlProb == null
+        ? '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">Model not trained yet</div>'
+        : `<div style="margin-bottom:.75rem">
+            <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+              <span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Delay Probability</span>
+              <span style="font-family:var(--font-mono);font-size:.72rem;color:${mlColor};font-weight:600">${mlProb}%</span>
+            </div>
+            <div style="height:6px;background:var(--border);border-radius:3px"><div style="width:${mlProb}%;height:100%;background:${mlColor};border-radius:3px"></div></div>
+           </div>` +
+          row('Expected Delay', (job.ml_expected_delay_days||0) + 'd', job.ml_expected_delay_days > 0 ? 'var(--amber)' : 'var(--muted)') +
+          row('ML Risk Level', job.ml_risk_level, mlColor) +
+          row('Confidence', job.ml_confidence)
+    )}
+    ${permitInfo ? section('Permits',
+      row('Total', permitInfo.total) +
+      row('Approved', permitInfo.approved, 'var(--green)') +
+      row('Pending', permitInfo.pending, permitInfo.pending > 0 ? 'var(--amber)' : 'var(--muted)') +
+      row('Blocked / Expired', (permitInfo.blocked||0) + ' / ' + (permitInfo.expired||0), (permitInfo.blocked||permitInfo.expired) ? 'var(--red)' : 'var(--muted)') +
+      row('Expiring Soon', permitInfo.expiring_soon||0, permitInfo.expiring_soon > 0 ? 'var(--amber)' : 'var(--muted)')
+    ) : ''}
+    ${rfiInfo ? section('RFIs & Submittals',
+      row('Total RFIs', rfiInfo.total) +
+      row('Open RFIs', rfiInfo.open, rfiInfo.open > 0 ? 'var(--amber)' : 'var(--muted)') +
+      row('Overdue RFIs', rfiInfo.overdue, rfiInfo.overdue > 0 ? 'var(--red)' : 'var(--muted)') +
+      (subInfo ? row('Pending Submittals', subInfo.pending, subInfo.pending > 0 ? 'var(--amber)' : 'var(--muted)') : '')
+    ) : ''}
+  </div>
+  </div>`;
+
+  document.getElementById('jm-body').innerHTML = html;
+  document.getElementById('job-modal').style.display = 'flex';
+}
+
+document.getElementById('job-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('job-modal'))
+    document.getElementById('job-modal').style.display = 'none';
+});
+
+
+// ── Trend Comparison ─────────────────────────────────────────────────────────
+async function loadTrends(currentData) {
+  try {
+    const res = await fetch('/api/prev-session');
+    if (!res.ok) return;
+    const prevData = await res.json();
+    renderTrends(currentData, prevData);
+  } catch(e) {}
+}
+
+function renderTrends(current, prev) {
+  const order = {LOW:0, MEDIUM:1, HIGH:2};
+  const prevMap = {};
+  (prev.scored_jobs || []).forEach(j => prevMap[j.job_id] = j);
+
+  const worsened = [], improved = [], newHigh = [], unchanged = [];
+  for (const job of (current.scored_jobs || [])) {
+    const p = prevMap[job.job_id];
+    if (!p) { if (job.risk_level === 'HIGH') newHigh.push({...job, prev_level: null}); continue; }
+    const delta = order[job.risk_level] - order[p.risk_level];
+    const scoreDelta = +(job.risk_score - p.risk_score).toFixed(2);
+    if (delta > 0) worsened.push({...job, prev_level: p.risk_level, score_delta: scoreDelta});
+    else if (delta < 0) improved.push({...job, prev_level: p.risk_level, score_delta: scoreDelta});
+  }
+
+  const total = worsened.length + improved.length + newHigh.length;
+  if (!total) return;
+
+  document.getElementById('trend-section').style.display = 'block';
+  document.getElementById('trend-meta').textContent = `vs previous run · ${total} change${total!==1?'s':''}`;
+
+  document.getElementById('trend-kpi-grid').innerHTML = [
+    {label:'Worsened',  value:worsened.length, sub:'moved up in risk', cls:worsened.length?'red':'green'},
+    {label:'Improved',  value:improved.length, sub:'moved down in risk', cls:improved.length?'green':'green'},
+    {label:'New HIGH',  value:newHigh.length,  sub:'not in previous run', cls:newHigh.length?'red':'green'},
+    {label:'Unchanged', value: Object.keys(prevMap).length - worsened.length - improved.length - newHigh.length,
+     sub:'same risk level', cls:'blue'},
+  ].map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  const changed = [...worsened, ...newHigh, ...improved];
+  if (changed.length) {
+    document.getElementById('trend-table-wrap').style.display = 'block';
+    document.getElementById('trend-tbody').innerHTML = changed.map(j => {
+      const isWorse = worsened.includes(j) || newHigh.includes(j);
+      const arrow = isWorse ? '↑' : '↓';
+      const arrowColor = isWorse ? 'var(--red)' : 'var(--green)';
+      const prevLabel = j.prev_level ? `<span class="risk-pill risk-${j.prev_level}">${j.prev_level}</span>` : '<span style="color:var(--muted);font-family:var(--font-mono);font-size:.65rem">NEW</span>';
+      const deltaColor = (j.score_delta||0) > 0 ? 'var(--red)' : 'var(--green)';
+      return `<tr data-job-id="${j.job_id}" style="cursor:pointer">
+        <td style="color:var(--accent);font-weight:500">${j.job_id}</td>
+        <td>${j.contractor}</td>
+        <td style="color:var(--muted)">${j.scope_type}</td>
+        <td style="color:var(--muted)">${j.region}</td>
+        <td>${prevLabel}</td>
+        <td><span style="color:${arrowColor};margin-right:.3rem">${arrow}</span><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>
+        <td style="font-family:var(--font-mono);font-size:.72rem;color:${deltaColor}">${(j.score_delta||0)>0?'+':''}${j.score_delta||'—'}</td>
+      </tr>`;
+    }).join('');
+
+    // clicking trend rows also opens modal
+    document.getElementById('trend-tbody').addEventListener('click', e => {
+      const row = e.target.closest('tr[data-job-id]');
+      if (!row || !globalData) return;
+      const job = globalData.scored_jobs.find(j => j.job_id === row.dataset.jobId);
+      if (job) showJobModal(job);
+    });
+  }
+}
+
 
 // Google Sheets Integration
 let sheetsData = null;
@@ -1091,6 +1281,23 @@ document.getElementById('btn-export').addEventListener('click', async () => {
   finally { btn.textContent = '↓ Export PDF'; btn.disabled = false; }
 });
 </script>
+
+<!-- JOB DETAIL MODAL -->
+<div id="job-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:700px;width:100%;max-height:88vh;overflow-y:auto">
+    <div style="padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.3rem">Job Detail</div>
+        <div id="jm-title" style="font-size:1.15rem;font-weight:700;color:var(--accent)"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <span id="jm-risk-pill"></span>
+        <button onclick="document.getElementById('job-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.9rem;padding:.3rem .6rem;border-radius:5px;line-height:1">✕</button>
+      </div>
+    </div>
+    <div id="jm-body" style="padding:1.5rem 2rem"></div>
+  </div>
+</div>
 
 <!-- EMAIL MODAL -->
 <div id="email-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center">

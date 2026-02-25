@@ -41,11 +41,15 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = os.urandom(24)  # For session management
 
 LAST_SESSION_PATH = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
+PREV_SESSION_PATH = os.path.join(os.path.dirname(__file__), 'outputs', 'prev_session.json')
 
 
 def save_session(data: dict):
     try:
         os.makedirs('outputs', exist_ok=True)
+        import shutil
+        if os.path.exists(LAST_SESSION_PATH):
+            shutil.copy2(LAST_SESSION_PATH, PREV_SESSION_PATH)
         with open(LAST_SESSION_PATH, 'w') as f:
             json.dump(data, f, default=serialize)
     except Exception as e:
@@ -161,6 +165,17 @@ def last_session():
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     return jsonify({'error': 'No saved session'}), 404
+
+
+@app.route('/api/prev-session')
+def prev_session():
+    if os.path.exists(PREV_SESSION_PATH):
+        try:
+            with open(PREV_SESSION_PATH) as f:
+                return app.response_class(response=f.read(), mimetype='application/json')
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    return jsonify({'error': 'No previous session'}), 404
 
 
 @app.route('/api/upload', methods=['POST'])
