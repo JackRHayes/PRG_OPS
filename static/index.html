@@ -1464,13 +1464,18 @@ const AI_CHIPS = [
 ];
 
 function buildAIChips() {
-  document.getElementById('ai-chips').innerHTML = AI_CHIPS.map(q =>
-    `<button class="filter-btn" onclick="askAI(${JSON.stringify(q)})"
-      style="border-color:rgba(232,197,71,.3);color:var(--muted);font-size:.65rem;padding:.3rem .7rem"
-      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-      onmouseout="this.style.borderColor='rgba(232,197,71,.3)';this.style.color='var(--muted)'"
-    >${q}</button>`
-  ).join('');
+  const container = document.getElementById('ai-chips');
+  container.innerHTML = '';
+  AI_CHIPS.forEach(q => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.textContent = q;
+    btn.style.cssText = 'border-color:rgba(232,197,71,.3);color:var(--muted);font-size:.65rem;padding:.3rem .7rem';
+    btn.addEventListener('mouseover', () => { btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent)'; });
+    btn.addEventListener('mouseout',  () => { btn.style.borderColor='rgba(232,197,71,.3)'; btn.style.color='var(--muted)'; });
+    btn.addEventListener('click', () => askAI(q));
+    container.appendChild(btn);
+  });
 }
 buildAIChips();
 
