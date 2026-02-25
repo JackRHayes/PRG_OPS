@@ -474,7 +474,7 @@ def update_email_settings():
     if not updates:
         return jsonify({'error': 'No data provided'}), 400
     cfg = load_config()
-    for key in ('recipients', 'send_day', 'send_time', 'enabled', 'smtp_user', 'smtp_pass'):
+    for key in ('recipients', 'send_day', 'send_time', 'enabled', 'smtp_user', 'smtp_pass', 'anthropic_key'):
         if key in updates:
             cfg[key] = updates[key]
     save_config(cfg)
@@ -509,6 +509,99 @@ def preview_email_route():
     html = generate_weekly_report(data)
     path = preview_report(data, os.path.join(os.path.dirname(__file__), 'email_preview.html'))
     return app.response_class(response=html, mimetype='text/html')
+
+
+# ── AI Assistant ───────────────────────────────────────────────────────────────
+@app.route('/api/ai-query', methods=['POST'])
+def ai_query():
+    try:
+        import anthropic as _anthropic
+    except ImportError:
+        return jsonify({'error': 'Anthropic SDK not installed. Run: pip install anthropic'}), 500
+
+    body = request.get_json()
+    if not body:
+        return jsonify({'error': 'No data provided'}), 400
+
+    question = (body.get('question') or '').strip()
+    if not question:
+        return jsonify({'error': 'No question provided'}), 400
+
+    dash = body.get('data', {})
+
+    cfg = load_config()
+    api_key = cfg.get('anthropic_key', '') or os.environ.get('ANTHROPIC_API_KEY', '')
+    if not api_key:
+        return jsonify({'error': 'No Anthropic API key configured. Add it in Settings → AI Assistant.'}), 400
+
+    # Build structured context from dashboard data
+    summary      = dash.get('summary', {})
+    scored_jobs  = dash.get('scored_jobs', [])
+    ranked       = dash.get('ranked_contractors', [])
+    rfi_summary  = dash.get('rfi_summary', {})
+    permit_summary = dash.get('permit_summary', {})
+
+    high_jobs = [j for j in scored_jobs if j.get('risk_level') == 'HIGH']
+
+    job_lines = '\n'.join(
+        f"  - {j.get('job_id')}: {j.get('contractor')} | {j.get('scope_type')} | {j.get('region')} "
+        f"| score={j.get('risk_score')} | {j.get('risk_reasons','')}"
+        for j in high_jobs[:15]
+    )
+    contractor_lines = '\n'.join(
+        f"  #{c.get('rank')} {c.get('contractor')}: risk={c.get('contractor_risk_factor')}, "
+        f"avg_delay={c.get('avg_delay_days')}d, jobs={c.get('job_count')}"
+        for c in ranked[:8]
+    )
+
+    system_prompt = f"""You are PRG Risk Intelligence, an expert AI assistant embedded in a construction operations dashboard.
+You have live access to the following project data. Answer concisely and actionably.
+
+PORTFOLIO SUMMARY:
+  Total jobs: {summary.get('total_jobs', 0)}
+  Active: {summary.get('active_jobs', 0)} | Completed: {summary.get('completed_jobs', 0)}
+  HIGH risk: {summary.get('high_risk_count', 0)} | MEDIUM: {summary.get('medium_risk_count', 0)} | LOW: {summary.get('low_risk_count', 0)}
+  Avg delay (completed jobs): {summary.get('avg_delay_days', 0)} days
+  Validation errors: {summary.get('invalid_records', 0)}
+
+HIGH RISK JOBS ({len(high_jobs)} total):
+{job_lines or '  None'}
+
+CONTRACTOR RANKINGS (by risk factor):
+{contractor_lines or '  No data'}
+"""
+
+    if rfi_summary:
+        system_prompt += (
+            f"\nRFI STATUS: {rfi_summary.get('total',0)} total, "
+            f"{rfi_summary.get('open',0)} open, {rfi_summary.get('overdue',0)} overdue, "
+            f"avg response {rfi_summary.get('avg_response_days',0)}d"
+        )
+    if permit_summary:
+        system_prompt += (
+            f"\nPERMIT STATUS: {permit_summary.get('total',0)} total, "
+            f"{permit_summary.get('approved',0)} approved, {permit_summary.get('blocked',0)} blocked, "
+            f"{permit_summary.get('expiring_soon',0)} expiring soon"
+        )
+
+    system_prompt += (
+        "\n\nRespond in plain text. Be specific — reference job IDs, contractor names, and numbers "
+        "from the data above. Keep answers under 200 words unless detail is truly needed."
+    )
+
+    try:
+        client = _anthropic.Anthropic(api_key=api_key)
+        msg = client.messages.create(
+            model='claude-haiku-4-5-20251001',
+            max_tokens=512,
+            system=system_prompt,
+            messages=[{'role': 'user', 'content': question}],
+        )
+        return jsonify({'answer': msg.content[0].text})
+    except _anthropic.AuthenticationError:
+        return jsonify({'error': 'Invalid API key. Double-check your Anthropic key in Settings.'}), 401
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

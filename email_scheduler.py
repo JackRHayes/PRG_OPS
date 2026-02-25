@@ -23,6 +23,7 @@ DEFAULT_CONFIG = {
     "last_sent": None,
     "smtp_user": "",
     "smtp_pass": "",
+    "anthropic_key": "",
 }
 
 # ── Config helpers ─────────────────────────────────────────────────────────────
