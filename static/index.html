@@ -739,7 +739,7 @@ function renderContractors(contractors) {
   const maxRisk = Math.max(...contractors.map(c=>c.contractor_risk_factor));
   document.getElementById('contractor-grid').innerHTML = contractors.map(c => {
     const pct = Math.round((c.contractor_risk_factor/maxRisk)*100);
-    return `<div class="contractor-card"><div class="contractor-rank">#${c.rank} of ${contractors.length}</div><div class="contractor-name">${c.contractor}</div><div class="contractor-stats"><div class="stat-item"><div class="stat-label">Avg Delay</div><div class="stat-value" style="color:${c.avg_delay_days>10?'var(--red)':'var(--green)'}">${c.avg_delay_days}d</div></div><div class="stat-item"><div class="stat-label">Jobs</div><div class="stat-value">${c.job_count}</div></div><div class="stat-item"><div class="stat-label">Markout Issues</div><div class="stat-value" style="color:${c.avg_markout_issues>1?'var(--amber)':'var(--muted)'}">${c.avg_markout_issues}</div></div><div class="stat-item"><div class="stat-label">Insp Fail Rate</div><div class="stat-value" style="color:${c.inspection_fail_rate>1?'var(--amber)':'var(--muted)'}">${c.inspection_fail_rate}</div></div></div><div class="risk-meter"><div class="risk-meter-label"><span>Risk Factor</span><span style="color:var(--text)">${c.contractor_risk_factor}</span></div><div class="risk-meter-bar"><div class="risk-meter-fill" style="width:${pct}%"></div></div></div></div>`;
+    return `<div class="contractor-card" data-contractor="${c.contractor}" style="cursor:pointer"><div class="contractor-rank">#${c.rank} of ${contractors.length}</div><div class="contractor-name">${c.contractor}</div><div class="contractor-stats"><div class="stat-item"><div class="stat-label">Avg Delay</div><div class="stat-value" style="color:${c.avg_delay_days>10?'var(--red)':'var(--green)'}">${c.avg_delay_days}d</div></div><div class="stat-item"><div class="stat-label">Jobs</div><div class="stat-value">${c.job_count}</div></div><div class="stat-item"><div class="stat-label">Markout Issues</div><div class="stat-value" style="color:${c.avg_markout_issues>1?'var(--amber)':'var(--muted)'}">${c.avg_markout_issues}</div></div><div class="stat-item"><div class="stat-label">Insp Fail Rate</div><div class="stat-value" style="color:${c.inspection_fail_rate>1?'var(--amber)':'var(--muted)'}">${c.inspection_fail_rate}</div></div></div><div class="risk-meter"><div class="risk-meter-label"><span>Risk Factor</span><span style="color:var(--text)">${c.contractor_risk_factor}</span></div><div class="risk-meter-bar"><div class="risk-meter-fill" style="width:${pct}%"></div></div></div></div>`;
   }).join('');
 }
 
@@ -946,6 +946,112 @@ function renderTrends(current, prev) {
   }
 }
 
+
+// ── Contractor Drill-Down ────────────────────────────────────────────────────
+document.getElementById('contractor-grid').addEventListener('click', e => {
+  const card = e.target.closest('[data-contractor]');
+  if (!card || !globalData) return;
+  showContractorModal(card.dataset.contractor);
+});
+
+document.getElementById('contractor-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('contractor-modal'))
+    document.getElementById('contractor-modal').style.display = 'none';
+});
+
+function showContractorModal(name) {
+  const c = (globalData.ranked_contractors || []).find(x => x.contractor === name);
+  if (!c) return;
+
+  document.getElementById('cm-title').textContent = name;
+  document.getElementById('cm-rank').textContent = `#${c.rank} of ${(globalData.ranked_contractors||[]).length}`;
+
+  const allJobs    = globalData.all_jobs    || [];
+  const scoredJobs = globalData.scored_jobs || [];
+  const myJobs     = allJobs.filter(j => j.contractor === name);
+  const myActive   = scoredJobs.filter(j => j.contractor === name);
+  const myCompleted = myJobs.filter(j => j.status === 'Completed');
+  const delayed    = myCompleted.filter(j => (j.delay_days||0) > 0);
+  const avgDelay   = myCompleted.length ? (myCompleted.reduce((s,j)=>s+(j.delay_days||0),0)/myCompleted.length).toFixed(1) : 0;
+  const worstDelay = myCompleted.length ? Math.max(...myCompleted.map(j=>j.delay_days||0)) : 0;
+  const riskColor  = c.contractor_risk_factor > 1.5 ? 'var(--red)' : c.contractor_risk_factor > 0.8 ? 'var(--amber)' : 'var(--green)';
+
+  // KPI strip
+  const kpis = [
+    {label:'Total Jobs',    value:myJobs.length,              color:'var(--blue)'},
+    {label:'Active',        value:myActive.length,            color:'var(--accent)'},
+    {label:'Completed',     value:myCompleted.length,         color:'var(--green)'},
+    {label:'Avg Delay',     value:avgDelay+'d',               color:avgDelay>10?'var(--red)':'var(--green)'},
+    {label:'Worst Delay',   value:worstDelay+'d',             color:worstDelay>30?'var(--red)':'var(--muted)'},
+    {label:'Delayed Jobs',  value:delayed.length,             color:delayed.length?'var(--amber)':'var(--green)'},
+    {label:'Risk Factor',   value:c.contractor_risk_factor,   color:riskColor},
+    {label:'Insp Fail Rate',value:c.inspection_fail_rate,     color:c.inspection_fail_rate>1?'var(--amber)':'var(--muted)'},
+  ];
+
+  const kpiHtml = `<div class="kpi-grid" style="margin-bottom:1.5rem">${kpis.map(k=>
+    `<div class="kpi-card" style="border-top:2px solid ${k.color}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="font-size:1.4rem;color:${k.color}">${k.value}</div>
+    </div>`).join('')}</div>`;
+
+  // Risk meter
+  const maxRisk = Math.max(...(globalData.ranked_contractors||[]).map(x=>x.contractor_risk_factor));
+  const pct = Math.round((c.contractor_risk_factor/maxRisk)*100);
+  const meterHtml = `<div style="margin-bottom:1.5rem">
+    <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.65rem;color:var(--muted);margin-bottom:.4rem">
+      <span>RISK FACTOR</span><span style="color:${riskColor};font-weight:600">${c.contractor_risk_factor}</span>
+    </div>
+    <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+      <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red));border-radius:4px"></div>
+    </div>
+  </div>`;
+
+  // Active jobs table
+  const activeHtml = myActive.length ? `
+    <div style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)">Active Jobs (${myActive.length})</div>
+    <div class="table-wrap" style="margin-bottom:1.5rem"><div style="overflow-x:auto">
+    <table><thead><tr><th>Job ID</th><th>Scope</th><th>Region</th><th>Days Open</th><th>Delay</th><th>Risk</th><th>ML %</th></tr></thead>
+    <tbody>${myActive.map(j=>{
+      const mlProb = j.ml_delay_probability;
+      const mlColor = mlProb==null?'var(--muted)':mlProb>=60?'var(--red)':mlProb>=30?'var(--amber)':'var(--green)';
+      return `<tr data-job-id="${j.job_id}" style="cursor:pointer">
+        <td style="color:var(--accent);font-weight:500">${j.job_id}</td>
+        <td style="color:var(--muted)">${j.scope_type}</td>
+        <td style="color:var(--muted)">${j.region}</td>
+        <td>${j.actual_duration_days||0}</td>
+        <td style="color:${(j.delay_days||0)>0?'var(--red)':'var(--muted)'}">${j.delay_days||0}d</td>
+        <td><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>
+        <td style="font-family:var(--font-mono);font-size:.7rem;color:${mlColor}">${mlProb!=null?mlProb+'%':'—'}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div></div>` : '';
+
+  // Completed jobs table (top 10 by delay)
+  const topCompleted = [...myCompleted].sort((a,b)=>(b.delay_days||0)-(a.delay_days||0)).slice(0,10);
+  const completedHtml = topCompleted.length ? `
+    <div style="font-family:var(--font-mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)">Completed Jobs — Top Delays</div>
+    <div class="table-wrap"><div style="overflow-x:auto">
+    <table><thead><tr><th>Job ID</th><th>Scope</th><th>Region</th><th>Duration</th><th>Delay</th><th>Delay %</th></tr></thead>
+    <tbody>${topCompleted.map(j=>`<tr>
+      <td style="color:var(--accent);font-weight:500">${j.job_id}</td>
+      <td style="color:var(--muted)">${j.scope_type}</td>
+      <td style="color:var(--muted)">${j.region}</td>
+      <td>${j.actual_duration_days||0}d</td>
+      <td style="color:${(j.delay_days||0)>0?'var(--red)':'var(--muted)'}">${j.delay_days||0}d</td>
+      <td style="color:var(--muted)">${j.delay_pct||0}%</td>
+    </tr>`).join('')}</tbody></table></div></div>` : '';
+
+  document.getElementById('cm-body').innerHTML = kpiHtml + meterHtml + activeHtml + completedHtml;
+
+  // clicking active job rows opens job modal
+  document.querySelectorAll('#cm-body tr[data-job-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      const job = (globalData.scored_jobs||[]).find(j=>j.job_id===row.dataset.jobId);
+      if (job) { document.getElementById('contractor-modal').style.display='none'; showJobModal(job); }
+    });
+  });
+
+  document.getElementById('contractor-modal').style.display = 'flex';
+}
 
 // Google Sheets Integration
 let sheetsData = null;
@@ -1302,6 +1408,23 @@ document.getElementById('btn-export').addEventListener('click', async () => {
   finally { btn.textContent = '↓ Export PDF'; btn.disabled = false; }
 });
 </script>
+
+<!-- CONTRACTOR MODAL -->
+<div id="contractor-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:780px;width:100%;max-height:88vh;overflow-y:auto">
+    <div style="padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.3rem">Contractor Scorecard</div>
+        <div id="cm-title" style="font-size:1.15rem;font-weight:700;color:var(--text)"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <span id="cm-rank" style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)"></span>
+        <button onclick="document.getElementById('contractor-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.9rem;padding:.3rem .6rem;border-radius:5px;line-height:1">✕</button>
+      </div>
+    </div>
+    <div id="cm-body" style="padding:1.5rem 2rem"></div>
+  </div>
+</div>
 
 <!-- JOB DETAIL MODAL -->
 <div id="job-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:1rem">
