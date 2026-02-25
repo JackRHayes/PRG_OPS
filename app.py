@@ -40,6 +40,17 @@ from email_scheduler import (
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.urandom(24)  # For session management
 
+LAST_SESSION_PATH = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
+
+
+def save_session(data: dict):
+    try:
+        os.makedirs('outputs', exist_ok=True)
+        with open(LAST_SESSION_PATH, 'w') as f:
+            json.dump(data, f, default=serialize)
+    except Exception as e:
+        print(f"[SESSION] Failed to save: {e}")
+
 
 def serialize(obj):
     if isinstance(obj, date):
@@ -141,6 +152,17 @@ def index():
     return send_from_directory('static', 'index.html')
 
 
+@app.route('/api/last-session')
+def last_session():
+    if os.path.exists(LAST_SESSION_PATH):
+        try:
+            with open(LAST_SESSION_PATH) as f:
+                return app.response_class(response=f.read(), mimetype='application/json')
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    return jsonify({'error': 'No saved session'}), 404
+
+
 @app.route('/api/upload', methods=['POST'])
 def upload():
     if 'file' not in request.files:
@@ -162,6 +184,7 @@ def upload():
             sub_path=tmp_paths.get('sub_file'),
             permit_path=tmp_paths.get('permit_file'),
         )
+        save_session(result)
         return app.response_class(
             response=json.dumps(result, default=serialize),
             mimetype='application/json'
@@ -192,6 +215,7 @@ def sample():
             sub_path=paths['sub'] if os.path.exists(paths['sub']) else None,
             permit_path=paths['permit'] if os.path.exists(paths['permit']) else None,
         )
+        save_session(result)
         return app.response_class(
             response=json.dumps(result, default=serialize),
             mimetype='application/json'

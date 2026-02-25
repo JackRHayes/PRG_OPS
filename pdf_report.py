@@ -105,7 +105,7 @@ def risk_table(scored_jobs):
         return None
 
     s = build_styles()
-    header = ['JOB ID', 'CONTRACTOR', 'SCOPE', 'REGION', 'DAYS OPEN', 'DELAY', 'SCORE', 'REASONS']
+    header = ['JOB ID', 'CONTRACTOR', 'SCOPE', 'REGION', 'DAYS OPEN', 'DELAY', 'SCORE', 'ML %', 'ML LEVEL', 'REASONS']
 
     def cell(text, color=TEXT, bold=False):
         font = 'Helvetica-Bold' if bold else 'Helvetica'
@@ -115,6 +115,9 @@ def risk_table(scored_jobs):
 
     rows = [[cell(h, MUTED, True) for h in header]]
     for j in high:
+        ml_prob = j.get('ml_delay_probability')
+        ml_lvl = j.get('ml_risk_level') or '—'
+        ml_color = RED if ml_prob and ml_prob >= 60 else AMBER if ml_prob and ml_prob >= 30 else MUTED
         rows.append([
             cell(j['job_id'], ACCENT),
             cell(j['contractor']),
@@ -123,10 +126,12 @@ def risk_table(scored_jobs):
             cell(j.get('actual_duration_days', 0)),
             cell(f"{j.get('delay_days',0)}d", RED if j.get('delay_days',0) > 0 else MUTED),
             cell(j['risk_score'], RED, True),
+            cell(f"{ml_prob}%" if ml_prob is not None else '—', ml_color),
+            cell(ml_lvl, ml_color),
             cell(j.get('risk_reasons','—'), MUTED),
         ])
 
-    col_widths = [0.9*inch, 1.2*inch, 0.85*inch, 0.7*inch, 0.6*inch, 0.5*inch, 0.5*inch, 1.65*inch]
+    col_widths = [0.8*inch, 1.05*inch, 0.75*inch, 0.6*inch, 0.5*inch, 0.45*inch, 0.45*inch, 0.45*inch, 0.55*inch, 1.25*inch]
     t = Table(rows, colWidths=col_widths, repeatRows=1)
     t.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), SURFACE),

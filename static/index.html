@@ -148,6 +148,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
     <div class="opt-upload" id="permit-zone"><p>Optional</p><span id="permit-label">+ Permits</span><input type="file" id="permit-input" accept=".csv"></div>
   </div>
   <button class="btn-sample" id="btn-sample">↗ Load sample data instead</button>
+  <button class="btn-sample" id="btn-restore" style="display:none;border-color:var(--blue);color:var(--blue)">↺ Restore last session</button>
   <div class="loading-bar" id="loading-bar"></div>
   <div id="upload-error" style="margin-top:1rem;font-family:var(--font-mono);font-size:.75rem;color:var(--red)"></div>
 </div>
@@ -156,7 +157,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
 <div id="dashboard">
   <div class="topbar">
     <div class="topbar-logo">PRG · Risk Intel</div>
-    <div class="topbar-title">Operations Dashboard</div>
+    <div class="topbar-title">Operations Dashboard <span id="last-updated" style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);font-weight:400;margin-left:.75rem"></span></div>
     <div style="display:flex;gap:.5rem">
     <button class="btn-reset" id="btn-email" style="border-color:var(--blue);color:var(--blue)">📧 Email Report</button>
     <button class="btn-reset" id="btn-export" style="border-color:var(--accent);color:var(--accent)">↓ Export PDF</button>
@@ -203,13 +204,17 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
   <!-- JOBS -->
   <div class="tab-content" id="tab-jobs">
     <div class="content">
-      <div class="section-header"><div class="section-title">Active Job Risk Scores</div></div>
+      <div class="section-header">
+        <div class="section-title">Active Job Risk Scores</div>
+        <button id="btn-export-csv" style="padding:.45rem 1rem;background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:.7rem;border-radius:5px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↓ Export CSV</button>
+      </div>
       <div class="table-wrap">
         <div class="filter-bar">
           <button class="filter-btn active-all" data-filter="ALL">All</button>
           <button class="filter-btn" data-filter="HIGH">🔴 High</button>
           <button class="filter-btn" data-filter="MEDIUM">🟡 Medium</button>
           <button class="filter-btn" data-filter="LOW">🟢 Low</button>
+          <input id="job-search" type="text" placeholder="Search contractor, job ID, scope..." style="margin-left:auto;padding:.3rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.68rem;width:220px;outline:none">
         </div>
         <div style="overflow-x:auto">
           <table><thead><tr><th>Job ID</th><th>Contractor</th><th>Scope</th><th>Region</th><th>Days Open</th><th>Delay</th><th>Markout</th><th>Insp Fails</th><th>Risk Score</th><th>Level</th><th>ML Delay %</th><th>ML Predict</th><th>Reasons</th></tr></thead><tbody id="jobs-tbody"></tbody></table>
@@ -388,6 +393,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
 let globalData = null;
 let currentFilter = 'ALL';
 let currentPermitFilter = 'ALL';
+let jobSearch = '';
 let maxScore = 1;
 let charts = {};
 let selectedFiles = {jobs:null,rfi:null,sub:null,permit:null};
@@ -409,6 +415,22 @@ fileInput.addEventListener('change', () => { if (fileInput.files[0]) { selectedF
 });
 
 document.getElementById('btn-sample').addEventListener('click', loadSample);
+
+// Check for saved session on page load
+(async function checkLastSession() {
+  try {
+    const res = await fetch('/api/last-session');
+    if (res.ok) {
+      const data = await res.json();
+      window._lastSessionData = data;
+      document.getElementById('btn-restore').style.display = 'inline-block';
+    }
+  } catch(e) {}
+})();
+
+document.getElementById('btn-restore').addEventListener('click', () => {
+  if (window._lastSessionData) renderDashboard(window._lastSessionData);
+});
 document.getElementById('btn-reset').addEventListener('click', () => { document.getElementById('upload-screen').style.display='flex'; document.getElementById('dashboard').style.display='none'; selectedFiles={jobs:null,rfi:null,sub:null,permit:null}; hideLoading(); });
 
 function showLoading() { document.getElementById('loading-bar').classList.add('active'); document.getElementById('upload-error').textContent=''; }
@@ -474,6 +496,7 @@ document.querySelectorAll('[data-pfilter]').forEach(btn => {
 function renderDashboard(data) {
   globalData = data;
   hideLoading();
+  document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
   const scored = data.scored_jobs || [];
   maxScore = scored.length ? Math.max(...scored.map(j => j.risk_score)) : 1;
   renderKPIs(data.summary);
@@ -575,7 +598,16 @@ function renderCharts(data) {
 }
 
 function renderJobsTable(jobs) {
-  const filtered = currentFilter==='ALL' ? jobs : jobs.filter(j=>j.risk_level===currentFilter);
+  let filtered = currentFilter==='ALL' ? jobs : jobs.filter(j=>j.risk_level===currentFilter);
+  if (jobSearch) {
+    const q = jobSearch.toLowerCase();
+    filtered = filtered.filter(j =>
+      (j.job_id||'').toLowerCase().includes(q) ||
+      (j.contractor||'').toLowerCase().includes(q) ||
+      (j.scope_type||'').toLowerCase().includes(q) ||
+      (j.region||'').toLowerCase().includes(q)
+    );
+  }
   const tbody = document.getElementById('jobs-tbody');
   if (!filtered.length) { tbody.innerHTML=`<tr><td colspan="13" style="text-align:center;padding:2rem;font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">No jobs match this filter.</td></tr>`; return; }
   tbody.innerHTML = filtered.map(j => {
@@ -674,6 +706,35 @@ function renderContractors(contractors) {
 }
 
 
+
+// Job search
+document.getElementById('job-search').addEventListener('input', function() {
+  jobSearch = this.value.trim();
+  if (globalData) renderJobsTable(globalData.scored_jobs);
+});
+
+// CSV Export
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+  if (!globalData) { alert('Load data first.'); return; }
+  const jobs = globalData.scored_jobs || [];
+  const fields = ['job_id','contractor','scope_type','region','status','actual_duration_days',
+    'delay_days','markout_issues','inspections_failed','risk_score','risk_level',
+    'ml_delay_probability','ml_expected_delay_days','ml_risk_level','risk_reasons'];
+  const header = fields.join(',');
+  const rows = jobs.map(j => fields.map(f => {
+    const v = j[f] ?? '';
+    return typeof v === 'string' && (v.includes(',') || v.includes('"'))
+      ? `"${v.replace(/"/g,'""')}"` : v;
+  }).join(','));
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'PRG_Jobs_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
 
 // Google Sheets Integration
 let sheetsData = null;

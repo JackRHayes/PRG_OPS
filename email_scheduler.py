@@ -119,6 +119,31 @@ def generate_weekly_report(data: dict) -> str:
         for i in insights
     )
 
+    # RFI & Permit strip
+    rfi_s  = data.get('rfi_summary', {})
+    perm_s = data.get('permit_summary', {})
+    if rfi_s or perm_s:
+        def stat_cell(label, value, color):
+            return (f'<td style="width:25%;padding:0 8px;text-align:center">'
+                    f'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 8px">'
+                    f'<div style="font-size:26px;font-weight:800;color:{color};line-height:1">{value}</div>'
+                    f'<div style="font-size:10px;color:#94a3b8;margin-top:4px;text-transform:uppercase;letter-spacing:1px">{label}</div>'
+                    f'</div></td>')
+        cells = ''
+        if rfi_s:
+            cells += stat_cell('Open RFIs',    rfi_s.get('open', 0),    '#f59e0b' if rfi_s.get('open', 0) else '#10b981')
+            cells += stat_cell('Overdue RFIs', rfi_s.get('overdue', 0), '#ef4444' if rfi_s.get('overdue', 0) else '#10b981')
+        if perm_s:
+            cells += stat_cell('Blocked Permits',  perm_s.get('blocked', 0),       '#ef4444' if perm_s.get('blocked', 0) else '#10b981')
+            cells += stat_cell('Expiring Soon', perm_s.get('expiring_soon', 0), '#f59e0b' if perm_s.get('expiring_soon', 0) else '#10b981')
+        rfi_permit_html = f'''
+  <tr><td style="background:#ffffff;padding:0 32px 20px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0">
+    <h2 style="margin:0 0 16px 0;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#94a3b8">RFI & Permit Status</h2>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>{cells}</tr></table>
+  </td></tr>'''
+    else:
+        rfi_permit_html = ''
+
     ml_note = '' if any(j.get('ml_delay_probability') is not None for j in jobs) else (
         '<p style="margin:0;padding:10px 16px;background:#f8fafc;border-radius:6px;'
         'font-size:12px;color:#94a3b8;font-family:monospace">'
@@ -193,6 +218,9 @@ def generate_weekly_report(data: dict) -> str:
     </table>
     {ml_note}
   </td></tr>
+
+  <!-- RFI & Permit Strip -->
+  {rfi_permit_html}
 
   <!-- Key Insights -->
   <tr><td style="background:#ffffff;padding:0 32px 28px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0">
