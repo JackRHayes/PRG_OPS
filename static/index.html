@@ -10,7 +10,8 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0a0c0f;--surface:#111318;--border:#1e2330;--text:#e8eaf0;--muted:#5a6070;--accent:#e8c547;--red:#ff4757;--amber:#ffa502;--green:#2ed573;--blue:#1e90ff;--font-display:'Syne',sans-serif;--font-mono:'DM Mono',monospace}
-body{background:var(--bg);color:var(--text);font-family:var(--font-display);min-height:100vh;overflow-x:hidden}
+html[data-theme="light"]{--bg:#f4f6f9;--surface:#ffffff;--border:#dde2ec;--text:#0f172a;--muted:#64748b;--accent:#b8930a}
+body{background:var(--bg);color:var(--text);font-family:var(--font-display);min-height:100vh;overflow-x:hidden;transition:background .2s,color .2s}
 
 /* UPLOAD */
 #upload-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(232,197,71,.08) 0%,transparent 60%),var(--bg)}
@@ -159,6 +160,7 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
     <div class="topbar-logo">PRG · Risk Intel</div>
     <div class="topbar-title">Operations Dashboard <span id="last-updated" style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);font-weight:400;margin-left:.75rem"></span></div>
     <div style="display:flex;gap:.5rem">
+    <button class="btn-reset" id="btn-theme" title="Toggle light/dark mode" style="font-size:.85rem;padding:.4rem .65rem">🌙</button>
     <button class="btn-reset" id="btn-email" style="border-color:var(--blue);color:var(--blue)">📧 Email Report</button>
     <button class="btn-reset" id="btn-export" style="border-color:var(--accent);color:var(--accent)">↓ Export PDF</button>
     <button class="btn-reset" id="btn-reset">← New Upload</button>
@@ -406,6 +408,22 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
 
 
 <script>
+// Theme
+(function() {
+  const saved = localStorage.getItem('prg-theme');
+  if (saved === 'light') {
+    document.documentElement.dataset.theme = 'light';
+    document.getElementById('btn-theme').textContent = '☀️';
+  }
+})();
+document.getElementById('btn-theme').addEventListener('click', () => {
+  const light = document.documentElement.dataset.theme === 'light';
+  document.documentElement.dataset.theme = light ? '' : 'light';
+  document.getElementById('btn-theme').textContent = light ? '🌙' : '☀️';
+  localStorage.setItem('prg-theme', light ? 'dark' : 'light');
+  if (globalData) renderCharts(globalData);
+});
+
 let globalData = null;
 let currentFilter = 'ALL';
 let currentPermitFilter = 'ALL';
@@ -590,25 +608,28 @@ function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete chart
 
 function mkChart(id, type, data, options) { destroyChart(id); charts[id] = new Chart(document.getElementById('chart-'+id), {type, data, options}); }
 
+function isLight() { return document.documentElement.dataset.theme === 'light'; }
+function tc(dark, light) { return isLight() ? light : dark; }
+
 const baseOpts = (indexAxis) => ({
   responsive:true, maintainAspectRatio:false,
   plugins:{legend:{display:false}},
   scales:{
-    x:{grid:{color:indexAxis==='y'?'#1e2330':'none'},ticks:{color:indexAxis==='y'?'#5a6070':'#e8eaf0',font:{family:'DM Mono',size:10}}},
-    y:{grid:{color:indexAxis==='y'?'none':'#1e2330'},ticks:{color:indexAxis==='y'?'#e8eaf0':'#5a6070',font:{family:'DM Mono',size:10}}}
+    x:{grid:{color:indexAxis==='y'?tc('#1e2330','#dde2ec'):'none'},ticks:{color:indexAxis==='y'?tc('#5a6070','#64748b'):tc('#e8eaf0','#0f172a'),font:{family:'DM Mono',size:10}}},
+    y:{grid:{color:indexAxis==='y'?'none':tc('#1e2330','#dde2ec')},ticks:{color:indexAxis==='y'?tc('#e8eaf0','#0f172a'):tc('#5a6070','#64748b'),font:{family:'DM Mono',size:10}}}
   }
 });
 
 function renderCharts(data) {
   const s = data.summary;
-  mkChart('risk','doughnut',{labels:['High','Medium','Low'],datasets:[{data:[s.high_risk_count,s.medium_risk_count,s.low_risk_count],backgroundColor:['#ff4757','#ffa502','#2ed573'],borderWidth:0,hoverOffset:8}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#5a6070',font:{family:'DM Mono',size:11},padding:16}}}});
+  mkChart('risk','doughnut',{labels:['High','Medium','Low'],datasets:[{data:[s.high_risk_count,s.medium_risk_count,s.low_risk_count],backgroundColor:['#ff4757','#ffa502','#2ed573'],borderWidth:0,hoverOffset:8}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:tc('#5a6070','#64748b'),font:{family:'DM Mono',size:11},padding:16}}}});
 
   const dc = data.delay_by_contractor||[];
   mkChart('delay','bar',{labels:dc.map(c=>c.contractor.split(' ').slice(0,2).join(' ')),datasets:[{data:dc.map(c=>c.avg_delay_days),backgroundColor:'#e8c547',borderRadius:4,barThickness:20}]},{...baseOpts('y'),indexAxis:'y',plugins:{legend:{display:false}}});
 
   const rr = data.region_risk||{};
   const regions = Object.keys(rr);
-  mkChart('region','bar',{labels:regions,datasets:[{label:'High',data:regions.map(r=>rr[r].HIGH),backgroundColor:'#ff4757',borderRadius:3,stack:'s'},{label:'Medium',data:regions.map(r=>rr[r].MEDIUM),backgroundColor:'#ffa502',borderRadius:3,stack:'s'},{label:'Low',data:regions.map(r=>rr[r].LOW),backgroundColor:'#2ed573',borderRadius:3,stack:'s'}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#5a6070',font:{family:'DM Mono',size:10},boxWidth:12}}},scales:{x:{grid:{display:false},ticks:{color:'#e8eaf0',font:{family:'DM Mono',size:10}}},y:{stacked:true,grid:{color:'#1e2330'},ticks:{color:'#5a6070',font:{family:'DM Mono',size:10}}}}});
+  mkChart('region','bar',{labels:regions,datasets:[{label:'High',data:regions.map(r=>rr[r].HIGH),backgroundColor:'#ff4757',borderRadius:3,stack:'s'},{label:'Medium',data:regions.map(r=>rr[r].MEDIUM),backgroundColor:'#ffa502',borderRadius:3,stack:'s'},{label:'Low',data:regions.map(r=>rr[r].LOW),backgroundColor:'#2ed573',borderRadius:3,stack:'s'}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc('#5a6070','#64748b'),font:{family:'DM Mono',size:10},boxWidth:12}}},scales:{x:{grid:{display:false},ticks:{color:tc('#e8eaf0','#0f172a'),font:{family:'DM Mono',size:10}}},y:{stacked:true,grid:{color:tc('#1e2330','#dde2ec')},ticks:{color:tc('#5a6070','#64748b'),font:{family:'DM Mono',size:10}}}}});
 
   const rc = data.ranked_contractors||[];
   mkChart('contractor-risk','bar',{labels:rc.map(c=>c.contractor.split(' ').slice(0,2).join(' ')),datasets:[{data:rc.map(c=>c.contractor_risk_factor),backgroundColor:rc.map((_,i)=>i===0?'#ff4757':i===1?'#ffa502':'#1e90ff'),borderRadius:4,barThickness:22}]},{...baseOpts('x'),plugins:{legend:{display:false}}});
