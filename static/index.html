@@ -561,6 +561,7 @@ let jobSearch = '';
 let maxScore = 1;
 let charts = {};
 let selectedFiles = {jobs:null,rfi:null,sub:null,permit:null};
+let notesCache = {};
 
 // Upload
 const uploadZone = document.getElementById('upload-zone');
@@ -613,7 +614,7 @@ async function uploadAll() {
     const data = await res.json();
     if (data.error) { document.getElementById('upload-error').textContent = '⚠ ' + data.error; hideLoading(); return; }
     renderDashboard(data);
-  } catch(e) { document.getElementById('upload-error').textContent = '⚠ Failed to connect. Is the server running?'; hideLoading(); }
+  } catch(e) { document.getElementById('upload-error').textContent = '⚠ ' + (e.message || 'Failed to connect. Is the server running?'); hideLoading(); console.error(e); }
 }
 
 async function loadSample() {
@@ -623,7 +624,7 @@ async function loadSample() {
     const data = await res.json();
     if (data.error) { document.getElementById('upload-error').textContent = '⚠ ' + data.error; hideLoading(); return; }
     renderDashboard(data);
-  } catch(e) { document.getElementById('upload-error').textContent = '⚠ Failed to connect. Is server running?'; hideLoading(); }
+  } catch(e) { document.getElementById('upload-error').textContent = '⚠ ' + (e.message || 'Failed to connect. Is server running?'); hideLoading(); console.error(e); }
 }
 
 // Tabs
@@ -671,9 +672,9 @@ function renderDashboard(data) {
   renderPermits(data);
   renderContractors(data.ranked_contractors);
   loadTrends(data);
-  buildAlerts(data);
-  loadRiskHistory();
-  renderGantt(data);
+  try { buildAlerts(data); } catch(e) { console.error('[alerts]', e); }
+  loadRiskHistory().catch(e => console.error('[history]', e));
+  try { renderGantt(data); } catch(e) { console.error('[gantt]', e); }
   document.getElementById('upload-screen').style.display='none';
   document.getElementById('dashboard').style.display='block';
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1681,8 +1682,6 @@ document.getElementById('btn-export').addEventListener('click', async () => {
 });
 
 // ── Notes / Annotations ───────────────────────────────────────────────────────
-let notesCache = {};
-
 (async function loadNotes() {
   try {
     const res = await fetch('/api/notes');

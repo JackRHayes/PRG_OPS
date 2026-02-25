@@ -11,7 +11,7 @@ __pycache__/
 .DS_Store
 
 # Outputs & cache
-outputs/.cache.pkl
+outputs/
 
 # Models
 models/*.pkl
