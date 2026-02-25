@@ -40,8 +40,33 @@ from email_scheduler import (
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.urandom(24)  # For session management
 
-LAST_SESSION_PATH = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
-PREV_SESSION_PATH = os.path.join(os.path.dirname(__file__), 'outputs', 'prev_session.json')
+LAST_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
+PREV_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'prev_session.json')
+RISK_HISTORY_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'risk_history.json')
+NOTES_PATH           = os.path.join(os.path.dirname(__file__), 'outputs', 'notes.json')
+
+
+def save_risk_history(summary: dict):
+    """Append current run's risk counts to a rolling 30-entry history file."""
+    try:
+        from datetime import datetime as _dt
+        os.makedirs('outputs', exist_ok=True)
+        history = []
+        if os.path.exists(RISK_HISTORY_PATH):
+            with open(RISK_HISTORY_PATH) as f:
+                history = json.load(f)
+        history.append({
+            'timestamp': _dt.now().isoformat(),
+            'high':   summary.get('high_risk_count', 0),
+            'medium': summary.get('medium_risk_count', 0),
+            'low':    summary.get('low_risk_count', 0),
+            'total':  summary.get('total_jobs', 0),
+        })
+        history = history[-30:]
+        with open(RISK_HISTORY_PATH, 'w') as f:
+            json.dump(history, f)
+    except Exception as e:
+        print(f"[HISTORY] Failed to save: {e}")
 
 
 def save_session(data: dict):
@@ -52,6 +77,7 @@ def save_session(data: dict):
             shutil.copy2(LAST_SESSION_PATH, PREV_SESSION_PATH)
         with open(LAST_SESSION_PATH, 'w') as f:
             json.dump(data, f, default=serialize)
+        save_risk_history(data.get('summary', {}))
     except Exception as e:
         print(f"[SESSION] Failed to save: {e}")
 
@@ -509,6 +535,54 @@ def preview_email_route():
     html = generate_weekly_report(data)
     path = preview_report(data, os.path.join(os.path.dirname(__file__), 'email_preview.html'))
     return app.response_class(response=html, mimetype='text/html')
+
+
+# ── Risk History ──────────────────────────────────────────────────────────────
+@app.route('/api/risk-history')
+def risk_history():
+    if os.path.exists(RISK_HISTORY_PATH):
+        try:
+            with open(RISK_HISTORY_PATH) as f:
+                return app.response_class(response=f.read(), mimetype='application/json')
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    return jsonify([])
+
+
+# ── Notes / Annotations ────────────────────────────────────────────────────────
+@app.route('/api/notes', methods=['GET'])
+def get_notes():
+    if os.path.exists(NOTES_PATH):
+        try:
+            with open(NOTES_PATH) as f:
+                return app.response_class(response=f.read(), mimetype='application/json')
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    return jsonify({})
+
+
+@app.route('/api/notes', methods=['POST'])
+def save_note():
+    body = request.get_json()
+    if not body:
+        return jsonify({'error': 'No data'}), 400
+    job_id = (body.get('job_id') or '').strip()
+    text   = (body.get('text') or '').strip()
+    if not job_id:
+        return jsonify({'error': 'job_id required'}), 400
+    try:
+        from datetime import datetime as _dt
+        os.makedirs('outputs', exist_ok=True)
+        notes = {}
+        if os.path.exists(NOTES_PATH):
+            with open(NOTES_PATH) as f:
+                notes = json.load(f)
+        notes[job_id] = {'text': text, 'updated_at': _dt.now().isoformat()}
+        with open(NOTES_PATH, 'w') as f:
+            json.dump(notes, f, indent=2)
+        return jsonify({'ok': True, 'job_id': job_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # ── AI Assistant ───────────────────────────────────────────────────────────────
