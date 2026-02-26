@@ -449,6 +449,53 @@ tbody tr:hover{background:rgba(255,255,255,.02)}
         <div id="email-last-sent" style="margin-top:1rem;font-family:var(--font-mono);font-size:0.7rem;color:var(--muted);display:none"></div>
       </div>
 
+      <!-- Cost Assumption Settings -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-top:1rem">
+        <h3 style="margin:0 0 0.5rem 0;font-size:1rem;color:var(--text)">Cost Assumption Settings</h3>
+        <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono);line-height:1.6">Configure the cost parameters used to calculate financial exposure for delayed jobs.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1.25rem">
+          <div>
+            <label style="display:block;font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:.05em">Cost per Delay Day ($)</label>
+            <input type="number" id="cost-per-day" min="0"
+              style="width:100%;padding:0.65rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.8rem;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="display:block;font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:.05em">Penalty Threshold (days)</label>
+            <input type="number" id="cost-threshold" min="0"
+              style="width:100%;padding:0.65rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.8rem;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="display:block;font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:.05em">Penalty Fee ($)</label>
+            <input type="number" id="cost-penalty" min="0"
+              style="width:100%;padding:0.65rem 0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.8rem;box-sizing:border-box">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <button id="btn-save-cost-config" style="padding:0.65rem 1.25rem;background:var(--accent);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Save Cost Config</button>
+          <span id="cost-config-status" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--muted)"></span>
+        </div>
+      </div>
+
+      <!-- Model Calibration & Trust -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-top:1rem">
+        <h3 style="margin:0 0 0.5rem 0;font-size:1rem;color:var(--text)">Model Calibration & Trust</h3>
+        <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono);line-height:1.6">Evaluate how well the ML model performs against completed jobs. Load data and train the model first.</p>
+        <button id="btn-run-calibration" style="padding:0.65rem 1.25rem;background:var(--blue);border:none;color:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Run Calibration Check</button>
+        <div id="calibration-results" style="display:none;margin-top:1.5rem">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
+            <span id="calib-trust-badge" style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;padding:.35rem .85rem;border-radius:5px"></span>
+            <span id="calib-trust-reason" style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted);line-height:1.45"></span>
+          </div>
+          <div id="calib-metrics-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.65rem;margin-bottom:1rem"></div>
+          <div id="calib-confusion" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;margin-bottom:.75rem">
+            <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Confusion Matrix</div>
+            <div id="calib-confusion-inner" style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem"></div>
+          </div>
+          <div id="calib-guidance" style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted);line-height:1.55;padding:.75rem 1rem;background:rgba(30,144,255,.06);border:1px solid rgba(30,144,255,.15);border-radius:8px"></div>
+        </div>
+        <div id="calibration-error" style="display:none;margin-top:.75rem;font-family:var(--font-mono);font-size:.75rem;color:var(--amber)"></div>
+      </div>
+
       <!-- Claude API Key -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-top:1rem">
         <h3 style="margin:0 0 0.5rem 0;font-size:1rem;color:var(--text)">AI Assistant</h3>
@@ -1002,6 +1049,82 @@ function showJobModal(job) {
   </div>
   </div>`;
 
+  // ML Explanation + Financial Exposure section
+  if (job.ml_explanation || job.ml_cost_exposure != null) {
+    html += `<div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">`;
+
+    if (job.ml_explanation) {
+      html += `<div>
+        <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)">ML Explanation</div>
+        <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--text);line-height:1.55">${job.ml_explanation}</div>
+      </div>`;
+    } else {
+      html += `<div></div>`;
+    }
+
+    if (job.ml_cost_exposure != null) {
+      const fmtCost = v => '$' + Math.round(v).toLocaleString();
+      html += `<div>
+        <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)">Financial Exposure</div>
+        <div style="display:flex;flex-direction:column;gap:.35rem">
+          <div style="display:flex;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">Expected</span><span style="font-family:var(--font-mono);font-size:.75rem;color:var(--amber);font-weight:600">${fmtCost(job.ml_cost_exposure)}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">Worst-Case</span><span style="font-family:var(--font-mono);font-size:.75rem;color:var(--red);font-weight:600">${fmtCost(job.ml_cost_worst_case ?? job.ml_cost_exposure)}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">Confidence</span><span style="font-family:var(--font-mono);font-size:.72rem;color:var(--text)">${job.ml_confidence || '—'}</span></div>
+        </div>
+      </div>`;
+    } else {
+      html += `<div></div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  // What-If Simulator
+  html += `<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+    <details id="whatif-details">
+      <summary style="cursor:pointer;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding-bottom:.6rem;list-style:none;display:flex;align-items:center;gap:.4rem">
+        <span id="whatif-chevron" style="transition:transform .2s">▶</span> What-If Simulator
+      </summary>
+      <div style="margin-top:.75rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+          <div>
+            <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.05em">Inspections Failed</label>
+            <input type="number" id="wi-inspections" value="${job.inspections_failed ?? 0}" min="0"
+              style="width:100%;padding:.45rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.05em">Markout Issues</label>
+            <input type="number" id="wi-markout" value="${job.markout_issues ?? 0}" min="0"
+              style="width:100%;padding:.45rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.05em">Planned Duration (days)</label>
+            <input type="number" id="wi-duration" value="${job.planned_duration_days ?? 0}" min="1"
+              style="width:100%;padding:.45rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box">
+          </div>
+        </div>
+        <button id="wi-run-btn" data-job-id="${job.job_id}"
+          style="padding:.45rem 1rem;background:var(--blue);border:none;color:#fff;border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:.72rem;font-weight:600;transition:opacity .2s">
+          Run Simulation
+        </button>
+        <div id="wi-results" style="display:none;margin-top:.85rem">
+          <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">Simulation Results (&#916; vs Current)</div>
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr>
+              <th style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-align:left;padding:.3rem .5rem;letter-spacing:.08em;text-transform:uppercase">Metric</th>
+              <th style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-align:right;padding:.3rem .5rem;letter-spacing:.08em;text-transform:uppercase">Original</th>
+              <th style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-align:right;padding:.3rem .5rem;letter-spacing:.08em;text-transform:uppercase">Modified</th>
+              <th style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-align:right;padding:.3rem .5rem;letter-spacing:.08em;text-transform:uppercase">&#916;</th>
+            </tr></thead>
+            <tbody id="wi-tbody"></tbody>
+          </table>
+        </div>
+        <div id="wi-error" style="display:none;margin-top:.5rem;font-family:var(--font-mono);font-size:.7rem;color:var(--red)"></div>
+      </div>
+    </details>
+  </div>`;
+
   // Notes section
   const existingNote = notesCache[job.job_id];
   html += `<div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
@@ -1029,6 +1152,76 @@ function showJobModal(job) {
     }
     btn.textContent = 'Save Note'; btn.disabled = false;
   });
+
+  // What-If details toggle chevron
+  const wiDetails = document.getElementById('whatif-details');
+  if (wiDetails) {
+    wiDetails.addEventListener('toggle', () => {
+      const chev = document.getElementById('whatif-chevron');
+      if (chev) chev.style.transform = wiDetails.open ? 'rotate(90deg)' : '';
+    });
+  }
+
+  // What-If run button
+  const wiBtn = document.getElementById('wi-run-btn');
+  if (wiBtn) {
+    wiBtn.addEventListener('click', async () => {
+      const errEl = document.getElementById('wi-error');
+      const resultsEl = document.getElementById('wi-results');
+      errEl.style.display = 'none';
+      resultsEl.style.display = 'none';
+      wiBtn.textContent = 'Running…'; wiBtn.disabled = true;
+
+      const modifications = {
+        inspections_failed: parseInt(document.getElementById('wi-inspections').value) || 0,
+        markout_issues: parseInt(document.getElementById('wi-markout').value) || 0,
+        planned_duration_days: parseInt(document.getElementById('wi-duration').value) || 0,
+      };
+
+      try {
+        const res = await fetch('/api/simulate', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ job_id: job.job_id, modifications })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errEl.textContent = '✗ ' + (data.error || 'Simulation failed'); errEl.style.display = 'block'; return;
+        }
+        const orig = data.original || {};
+        const mod  = data.modified  || {};
+        const delta = data.delta   || {};
+
+        function wiRow(label, origVal, modVal, deltaVal, fmt) {
+          fmt = fmt || (v => v);
+          const d = parseFloat(deltaVal) || 0;
+          const dColor = d < 0 ? 'var(--green)' : d > 0 ? 'var(--red)' : 'var(--muted)';
+          const sign = d > 0 ? '+' : '';
+          return `<tr>
+            <td style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);padding:.3rem .5rem">${label}</td>
+            <td style="font-family:var(--font-mono);font-size:.72rem;text-align:right;padding:.3rem .5rem;color:var(--text)">${fmt(origVal)}</td>
+            <td style="font-family:var(--font-mono);font-size:.72rem;text-align:right;padding:.3rem .5rem;color:var(--text)">${fmt(modVal)}</td>
+            <td style="font-family:var(--font-mono);font-size:.75rem;text-align:right;padding:.3rem .5rem;font-weight:600;color:${dColor}">${sign}${fmt(deltaVal)}</td>
+          </tr>`;
+        }
+        const fmtCost = v => '$' + Math.round(v).toLocaleString();
+        const fmtPct  = v => (parseFloat(v)||0).toFixed(1) + '%';
+        const fmtDay  = v => (parseFloat(v)||0).toFixed(1) + 'd';
+
+        document.getElementById('wi-tbody').innerHTML =
+          wiRow('Risk Score',       orig.risk_score, mod.risk_score, delta.risk_score_change, v => parseFloat(v).toFixed(2)) +
+          wiRow('Delay Probability',orig.ml_delay_probability, mod.ml_delay_probability, delta.ml_delay_probability_change, fmtPct) +
+          wiRow('Expected Delay',   orig.ml_expected_delay_days, mod.ml_expected_delay_days, delta.expected_delay_days_change, fmtDay) +
+          wiRow('Cost Exposure',    orig.expected_exposure, mod.expected_exposure, delta.cost_exposure_change, fmtCost);
+
+        resultsEl.style.display = 'block';
+      } catch(e) {
+        errEl.textContent = '✗ Error: ' + e.message; errEl.style.display = 'block';
+      } finally {
+        wiBtn.textContent = 'Run Simulation'; wiBtn.disabled = false;
+      }
+    });
+  }
 
   document.getElementById('job-modal').style.display = 'flex';
 }
@@ -1351,6 +1544,114 @@ document.getElementById('btn-import-sheets')?.addEventListener('click', async ()
 document.querySelector('[data-tab="settings"]')?.addEventListener('click', () => {
   checkSheetsConnection();
   checkModelStatus();
+  loadCostConfig();
+});
+
+// ── Cost Config ───────────────────────────────────────────────────────────────
+async function loadCostConfig() {
+  try {
+    const res = await fetch('/api/cost-config');
+    if (!res.ok) return;
+    const cfg = await res.json();
+    document.getElementById('cost-per-day').value   = cfg.cost_per_delay_day  ?? 4000;
+    document.getElementById('cost-threshold').value = cfg.penalty_threshold_days ?? 30;
+    document.getElementById('cost-penalty').value   = cfg.penalty_flat_fee     ?? 50000;
+  } catch(e) {}
+}
+
+document.getElementById('btn-save-cost-config')?.addEventListener('click', async () => {
+  const status = document.getElementById('cost-config-status');
+  const payload = {
+    cost_per_delay_day:    parseFloat(document.getElementById('cost-per-day').value)   || 0,
+    penalty_threshold_days: parseFloat(document.getElementById('cost-threshold').value) || 0,
+    penalty_flat_fee:       parseFloat(document.getElementById('cost-penalty').value)   || 0,
+  };
+  try {
+    const res = await fetch('/api/cost-config', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    status.textContent = res.ok ? '✓ Saved' : '✗ ' + (data.error || 'Failed');
+    status.style.color = res.ok ? 'var(--green)' : 'var(--red)';
+  } catch(e) { status.textContent = '✗ ' + e.message; status.style.color = 'var(--red)'; }
+});
+
+// ── Model Calibration ─────────────────────────────────────────────────────────
+document.getElementById('btn-run-calibration')?.addEventListener('click', async () => {
+  const resultsEl = document.getElementById('calibration-results');
+  const errorEl   = document.getElementById('calibration-error');
+  const btn = document.getElementById('btn-run-calibration');
+  resultsEl.style.display = 'none';
+  errorEl.style.display   = 'none';
+  btn.textContent = 'Running…'; btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/calibration');
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      errorEl.textContent = data.error || 'Calibration failed';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    // Trust badge
+    const badge = document.getElementById('calib-trust-badge');
+    const trustColors = { HIGH: 'var(--green)', MEDIUM: 'var(--amber)', LOW: 'var(--red)' };
+    const tc = trustColors[data.trust_level] || 'var(--muted)';
+    badge.textContent = data.trust_level || '—';
+    badge.style.background = tc === 'var(--green)' ? 'rgba(46,213,115,.15)' : tc === 'var(--amber)' ? 'rgba(255,165,2,.15)' : 'rgba(255,71,87,.15)';
+    badge.style.color = tc;
+    document.getElementById('calib-trust-reason').textContent = data.trust_reason || '';
+
+    // Metrics grid
+    const metrics = [];
+    if (data.n_evaluated != null) metrics.push({label:'Jobs Evaluated', value: data.n_evaluated, color:'var(--blue)'});
+    if (data.trained_on  != null) metrics.push({label:'Trained On',     value: data.trained_on + ' jobs', color:'var(--muted)'});
+    if (data.acc   != null) metrics.push({label:'Accuracy',   value: (data.acc*100).toFixed(1)+'%',  color:'var(--green)'});
+    if (data.prec  != null) metrics.push({label:'Precision',  value: (data.prec*100).toFixed(1)+'%', color:'var(--green)'});
+    if (data.rec   != null) metrics.push({label:'Recall',     value: (data.rec*100).toFixed(1)+'%',  color:'var(--green)'});
+    if (data.mae   != null) metrics.push({label:'MAE (days)', value: '±'+data.mae,                   color:'var(--accent)'});
+    if (data.r2    != null) metrics.push({label:'R² Score',   value: data.r2,                        color:'var(--blue)'});
+    document.getElementById('calib-metrics-grid').innerHTML = metrics.map(m =>
+      `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem">
+        <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem">${m.label}</div>
+        <div style="font-size:1.1rem;font-weight:700;color:${m.color}">${m.value}</div>
+      </div>`
+    ).join('');
+
+    // Confusion matrix
+    const confEl = document.getElementById('calib-confusion');
+    if (data.tp != null) {
+      document.getElementById('calib-confusion-inner').innerHTML = [
+        {label:'True Positives (caught delay)',   value: data.tp, color:'var(--green)'},
+        {label:'True Negatives (cleared job)',    value: data.tn, color:'var(--green)'},
+        {label:'False Positives (false alarm)',   value: data.fp, color:'var(--amber)'},
+        {label:'False Negatives (missed delay)',  value: data.fn, color:'var(--red)'},
+      ].map(m =>
+        `<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.5rem .75rem">
+          <div style="font-family:var(--font-mono);font-size:.58rem;color:var(--muted);margin-bottom:.2rem">${m.label}</div>
+          <div style="font-family:var(--font-mono);font-size:.9rem;font-weight:700;color:${m.color}">${m.value}</div>
+        </div>`
+      ).join('');
+      confEl.style.display = 'block';
+    } else {
+      confEl.style.display = 'none';
+    }
+
+    // Guidance
+    document.getElementById('calib-guidance').innerHTML =
+      '- Use <strong>HIGH</strong> risk flags to prioritize job site visits.<br>' +
+      '- The Expected Exposure metric translates risk to potential bottom-line impact.<br>' +
+      '- If Trust Level is <strong>LOW</strong>, predictions act as heuristics rather than statistical certainties.';
+
+    resultsEl.style.display = 'block';
+  } catch(e) {
+    errorEl.textContent = '✗ Error: ' + e.message;
+    errorEl.style.display = 'block';
+  } finally {
+    btn.textContent = 'Run Calibration Check'; btn.disabled = false;
+  }
 });
 
 async function checkModelStatus() {

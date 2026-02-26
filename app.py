@@ -678,6 +678,102 @@ CONTRACTOR RANKINGS (by risk factor):
         return jsonify({'error': str(e)}), 500
 
 
+# ── What-If / Calibration / Cost Config ───────────────────────────────────────
+COST_CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'cost_config.json')
+DEFAULT_COST_CONFIG = {
+    "cost_per_delay_day": 4000,
+    "penalty_threshold_days": 30,
+    "penalty_flat_fee": 50000,
+}
+
+
+@app.route('/api/simulate', methods=['POST'])
+def simulate():
+    from what_if import run_scenario
+    body = request.get_json()
+    if not body:
+        return jsonify({'error': 'No data provided'}), 400
+    job_id = (body.get('job_id') or '').strip()
+    modifications = body.get('modifications', {})
+    if not job_id:
+        return jsonify({'error': 'job_id required'}), 400
+    if not os.path.exists(LAST_SESSION_PATH):
+        return jsonify({'error': 'No session data. Load data first.'}), 404
+    try:
+        with open(LAST_SESSION_PATH) as f:
+            session_data = json.load(f)
+    except Exception as e:
+        return jsonify({'error': f'Failed to read session: {e}'}), 500
+
+    all_jobs = session_data.get('all_jobs', [])
+    job = next((j for j in all_jobs if j.get('job_id') == job_id), None)
+    if job is None:
+        scored = session_data.get('scored_jobs', [])
+        job = next((j for j in scored if j.get('job_id') == job_id), None)
+    if job is None:
+        return jsonify({'error': f'Job {job_id} not found in session'}), 404
+
+    contractor_scores = {
+        c['contractor']: c for c in session_data.get('ranked_contractors', [])
+    }
+    try:
+        result = run_scenario(job, contractor_scores, modifications)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/calibration')
+def calibration():
+    from calibration_report import get_calibration_metrics
+    if not os.path.exists(LAST_SESSION_PATH):
+        return jsonify({'error': 'No session data. Load data first.'}), 404
+    try:
+        with open(LAST_SESSION_PATH) as f:
+            session_data = json.load(f)
+    except Exception as e:
+        return jsonify({'error': f'Failed to read session: {e}'}), 500
+
+    all_jobs = session_data.get('all_jobs', [])
+    completed = [j for j in all_jobs if j.get('status') == 'Completed']
+    contractor_scores = {
+        c['contractor']: c for c in session_data.get('ranked_contractors', [])
+    }
+    try:
+        metrics = get_calibration_metrics(completed, contractor_scores)
+        return jsonify(metrics)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/cost-config', methods=['GET'])
+def get_cost_config():
+    if os.path.exists(COST_CONFIG_PATH):
+        try:
+            with open(COST_CONFIG_PATH) as f:
+                return jsonify(json.load(f))
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    return jsonify(DEFAULT_COST_CONFIG)
+
+
+@app.route('/api/cost-config', methods=['POST'])
+def save_cost_config():
+    body = request.get_json()
+    if not body:
+        return jsonify({'error': 'No data provided'}), 400
+    required_keys = {'cost_per_delay_day', 'penalty_threshold_days', 'penalty_flat_fee'}
+    if not required_keys.issubset(body.keys()):
+        return jsonify({'error': f'Missing keys. Required: {sorted(required_keys)}'}), 400
+    try:
+        config = {k: body[k] for k in required_keys}
+        with open(COST_CONFIG_PATH, 'w') as f:
+            json.dump(config, f, indent=2)
+        return jsonify({'ok': True, 'config': config})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     os.makedirs('static', exist_ok=True)
     print("\n" + "━" * 50)
