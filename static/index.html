@@ -764,23 +764,25 @@ function renderMLOverview(jobs) {
 
   const sorted = [...withML].sort((a,b) => (b.ml_delay_probability||0) - (a.ml_delay_probability||0));
   document.getElementById('ml-overview-tbody').innerHTML = sorted.map(j => {
-    const prob = j.ml_delay_probability;
+    const prob = Math.min(100, Math.max(0, toNum(j.ml_delay_probability, 0)));
     const pc = prob>=60?'var(--red)':prob>=30?'var(--amber)':'var(--green)';
     const mlLvl = j.ml_risk_level || '—';
+    const baseLevel = safeRiskLevel(j.risk_level);
+    const mlRiskLevel = safeRiskLevel(mlLvl);
     return `<tr>
-      <td style="color:var(--accent);font-weight:500">${j.job_id}</td>
-      <td>${j.contractor}</td>
-      <td style="color:var(--muted)">${j.scope_type}</td>
-      <td><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>
+      <td style="color:var(--accent);font-weight:500">${safeText(j.job_id, '')}</td>
+      <td>${safeText(j.contractor)}</td>
+      <td style="color:var(--muted)">${safeText(j.scope_type)}</td>
+      <td><span class="risk-pill ${baseLevel ? 'risk-' + baseLevel : ''}">${safeText(j.risk_level)}</span></td>
       <td><div style="display:flex;align-items:center;gap:.4rem">
         <div style="width:56px;height:4px;background:var(--border);border-radius:2px">
           <div style="width:${prob}%;height:100%;background:${pc};border-radius:2px"></div>
         </div>
-        <span style="font-family:var(--font-mono);font-size:.72rem;color:${pc}">${prob}%</span>
+        <span style="font-family:var(--font-mono);font-size:.72rem;color:${pc}">${safeText(prob,0)}%</span>
       </div></td>
-      <td style="font-family:var(--font-mono);font-size:.75rem;color:${(j.ml_expected_delay_days||0)>0?'var(--amber)':'var(--muted)'}">${j.ml_expected_delay_days||0}d</td>
-      <td><span class="risk-pill risk-${mlLvl}">${mlLvl}</span></td>
-      <td style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">${j.ml_confidence||'—'}</td>
+      <td style="font-family:var(--font-mono);font-size:.75rem;color:${(j.ml_expected_delay_days||0)>0?'var(--amber)':'var(--muted)'}">${safeText(j.ml_expected_delay_days,0)}d</td>
+      <td><span class="risk-pill ${mlRiskLevel ? 'risk-' + mlRiskLevel : ''}">${safeText(mlLvl)}</span></td>
+      <td style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">${safeText(j.ml_confidence)}</td>
     </tr>`;
   }).join('');
 }
@@ -791,6 +793,26 @@ function mkChart(id, type, data, options) { destroyChart(id); charts[id] = new C
 
 function isLight() { return document.documentElement.dataset.theme === 'light'; }
 function tc(dark, light) { return isLight() ? light : dark; }
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function safeText(value, fallback = '—') {
+  const v = value == null || value === '' ? fallback : value;
+  return escapeHtml(v);
+}
+function safeRiskLevel(level) {
+  const normalized = String(level || '').toUpperCase();
+  return ['HIGH', 'MEDIUM', 'LOW'].includes(normalized) ? normalized : null;
+}
+function toNum(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 const baseOpts = (indexAxis) => ({
   responsive:true, maintainAspectRatio:false,
@@ -830,26 +852,29 @@ function renderJobsTable(jobs) {
   const tbody = document.getElementById('jobs-tbody');
   if (!filtered.length) { tbody.innerHTML=`<tr><td colspan="13" style="text-align:center;padding:2rem;font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">No jobs match this filter.</td></tr>`; return; }
   tbody.innerHTML = filtered.map(j => {
-    const pct = Math.min(100, Math.round((j.risk_score/maxScore)*100));
+    const riskScore = toNum(j.risk_score, 0);
+    const pct = Math.min(100, Math.max(0, Math.round((riskScore/maxScore)*100)));
     const bc = j.risk_level==='HIGH'?'var(--red)':j.risk_level==='MEDIUM'?'var(--amber)':'var(--green)';
     const mlProb = j.ml_delay_probability;
+    const mlProbNum = mlProb == null ? null : Math.min(100, Math.max(0, toNum(mlProb, 0)));
     const mlLevel = j.ml_risk_level;
     const mlDays = j.ml_expected_delay_days;
     const mlConf = j.ml_confidence;
-    const mlProbColor = mlProb==null?'var(--muted)':mlProb>=60?'var(--red)':mlProb>=30?'var(--amber)':'var(--green)';
+    const mlProbColor = mlProbNum==null?'var(--muted)':mlProbNum>=60?'var(--red)':mlProbNum>=30?'var(--amber)':'var(--green)';
     const mlProbCell = mlProb==null
       ? `<td style="color:var(--muted);font-family:var(--font-mono);font-size:.72rem">—</td>`
       : `<td><div style="display:flex;align-items:center;gap:.4rem">
            <div style="width:48px;height:4px;background:var(--border);border-radius:2px;flex-shrink:0">
-             <div style="width:${mlProb}%;height:100%;background:${mlProbColor};border-radius:2px"></div>
+             <div style="width:${mlProbNum}%;height:100%;background:${mlProbColor};border-radius:2px"></div>
            </div>
-           <span style="font-family:var(--font-mono);font-size:.72rem;color:${mlProbColor}">${mlProb}%</span>
+           <span style="font-family:var(--font-mono);font-size:.72rem;color:${mlProbColor}">${safeText(mlProbNum,0)}%</span>
          </div></td>`;
     const mlPredCell = mlLevel==null
       ? `<td style="color:var(--muted);font-family:var(--font-mono);font-size:.72rem">—</td>`
-      : `<td><span class="risk-pill risk-${mlLevel}" title="${mlDays}d expected · ${mlConf} confidence">${mlLevel}<span style="opacity:.6;margin-left:.3rem">${mlDays}d</span></span></td>`;
+      : `<td><span class="risk-pill ${safeRiskLevel(mlLevel) ? 'risk-' + safeRiskLevel(mlLevel) : ''}" title="${safeText(mlDays, 0)}d expected · ${safeText(mlConf)} confidence">${safeText(mlLevel)}<span style="opacity:.6;margin-left:.3rem">${safeText(mlDays, 0)}d</span></span></td>`;
     const noteTag = notesCache[j.job_id]?.text ? '<span class="note-tag">note</span>' : '';
-    return `<tr data-job-id="${j.job_id}" style="cursor:pointer"><td style="color:var(--accent);font-weight:500">${j.job_id} ${noteTag}</td><td>${j.contractor}</td><td style="color:var(--muted)">${j.scope_type}</td><td style="color:var(--muted)">${j.region}</td><td>${j.actual_duration_days||0}</td><td style="color:${j.delay_days>0?'var(--red)':'var(--muted)'}">${j.delay_days||0}d</td><td>${j.markout_issues||0}</td><td>${j.inspections_failed||0}</td><td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${bc}"></div></div><span class="score-num">${j.risk_score}</span></div></td><td><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>${mlProbCell}${mlPredCell}<td><div class="reasons-text">${j.risk_reasons||'—'}</div></td></tr>`;
+    const riskLevel = safeRiskLevel(j.risk_level);
+    return `<tr data-job-id="${safeText(j.job_id, '')}" style="cursor:pointer"><td style="color:var(--accent);font-weight:500">${safeText(j.job_id, '')} ${noteTag}</td><td>${safeText(j.contractor)}</td><td style="color:var(--muted)">${safeText(j.scope_type)}</td><td style="color:var(--muted)">${safeText(j.region)}</td><td>${safeText(j.actual_duration_days, 0)}</td><td style="color:${j.delay_days>0?'var(--red)':'var(--muted)'}">${safeText(j.delay_days, 0)}d</td><td>${safeText(j.markout_issues, 0)}</td><td>${safeText(j.inspections_failed, 0)}</td><td><div class="score-bar-wrap"><div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${bc}"></div></div><span class="score-num">${safeText(riskScore, 0)}</span></div></td><td><span class="risk-pill ${riskLevel ? 'risk-' + riskLevel : ''}">${safeText(j.risk_level)}</span></td>${mlProbCell}${mlPredCell}<td><div class="reasons-text">${safeText(j.risk_reasons)}</div></td></tr>`;
   }).join('');
 }
 
@@ -870,16 +895,16 @@ function renderRFI(data) {
 
   const openRFIs = (data.rfis||[]).filter(r=>r.status==='Open').sort((a,b)=>b.days_open-a.days_open);
   document.getElementById('rfi-tbody').innerHTML = openRFIs.slice(0,20).map(r =>
-    `<tr><td style="color:var(--accent)">${r.rfi_id}</td><td>${r.job_id}</td><td style="color:var(--muted);max-width:160px;white-space:normal">${r.subject}</td><td>${r.submitted_date||'—'}</td><td style="color:${r.days_open>14?'var(--red)':'var(--text)'}">${r.days_open}d${r.overdue?'<span class="warn-tag">OVERDUE</span>':''}</td><td><span class="status-pill s-open">Open</span></td></tr>`
+    `<tr><td style="color:var(--accent)">${safeText(r.rfi_id)}</td><td>${safeText(r.job_id)}</td><td style="color:var(--muted);max-width:160px;white-space:normal">${safeText(r.subject)}</td><td>${safeText(r.submitted_date)}</td><td style="color:${r.days_open>14?'var(--red)':'var(--text)'}">${safeText(r.days_open,0)}d${r.overdue?'<span class="warn-tag">OVERDUE</span>':''}</td><td><span class="status-pill s-open">Open</span></td></tr>`
   ).join('') || emptyRow(6, 'No open RFIs.');
 
   const pending = (data.submittals||[]).filter(s=>['Pending Review','Resubmit Required'].includes(s.status)).sort((a,b)=>b.overdue-a.overdue);
   document.getElementById('sub-tbody').innerHTML = pending.slice(0,20).map(s =>
-    `<tr><td style="color:var(--accent)">${s.submittal_id}</td><td>${s.job_id}</td><td style="color:var(--muted)">${s.type}</td><td style="color:${s.overdue?'var(--red)':'var(--text)'}">${s.required_by_date||'—'}${s.overdue?'<span class="warn-tag">OVERDUE</span>':''}</td><td><span class="status-pill ${s.status==='Resubmit Required'?'s-blocked':'s-pending'}">${s.status}</span></td></tr>`
+    `<tr><td style="color:var(--accent)">${safeText(s.submittal_id)}</td><td>${safeText(s.job_id)}</td><td style="color:var(--muted)">${safeText(s.type)}</td><td style="color:${s.overdue?'var(--red)':'var(--text)'}">${safeText(s.required_by_date)}${s.overdue?'<span class="warn-tag">OVERDUE</span>':''}</td><td><span class="status-pill ${s.status==='Resubmit Required'?'s-blocked':'s-pending'}">${safeText(s.status)}</span></td></tr>`
   ).join('') || emptyRow(5, 'No pending submittals.');
 
   document.getElementById('high-rfi-tbody').innerHTML = (data.high_rfi_jobs||[]).map(j =>
-    `<tr><td style="color:var(--accent)">${j.job_id}</td><td>${j.total}</td><td style="color:${j.open>2?'var(--red)':'var(--amber)'}">${j.open}</td><td style="color:${j.overdue>0?'var(--red)':'var(--muted)'}">${j.overdue}</td></tr>`
+    `<tr><td style="color:var(--accent)">${safeText(j.job_id)}</td><td>${safeText(j.total,0)}</td><td style="color:${j.open>2?'var(--red)':'var(--amber)'}">${safeText(j.open,0)}</td><td style="color:${j.overdue>0?'var(--red)':'var(--muted)'}">${safeText(j.overdue,0)}</td></tr>`
   ).join('') || emptyRow(4, 'No high RFI jobs.');
 }
 
@@ -898,11 +923,11 @@ function renderPermits(data) {
   ].map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');
 
   document.getElementById('blocked-tbody').innerHTML = (data.blocked_jobs||[]).slice(0,15).map(j =>
-    `<tr><td style="color:var(--accent)">${j.job_id}</td><td>${j.total}</td><td style="color:${j.pending>0?'var(--amber)':'var(--muted)'}">${j.pending}</td><td style="color:${j.blocked>0?'var(--red)':'var(--muted)'}">${j.blocked}</td><td style="color:${j.expired>0?'var(--red)':'var(--muted)'}">${j.expired}</td></tr>`
+    `<tr><td style="color:var(--accent)">${safeText(j.job_id)}</td><td>${safeText(j.total,0)}</td><td style="color:${j.pending>0?'var(--amber)':'var(--muted)'}">${safeText(j.pending,0)}</td><td style="color:${j.blocked>0?'var(--red)':'var(--muted)'}">${safeText(j.blocked,0)}</td><td style="color:${j.expired>0?'var(--red)':'var(--muted)'}">${safeText(j.expired,0)}</td></tr>`
   ).join('') || emptyRow(5, 'No blocked jobs.');
 
   document.getElementById('expiring-tbody').innerHTML = (data.expiring_permits||[]).slice(0,15).map(p =>
-    `<tr><td style="color:var(--accent)">${p.permit_id}</td><td>${p.job_id}</td><td style="color:var(--muted)">${p.permit_type}</td><td>${p.expiration_date||'—'}</td><td style="color:${p.days_until_expiry<=7?'var(--red)':'var(--amber)'}">${p.days_until_expiry}d<span class="amber-tag">EXPIRING</span></td></tr>`
+    `<tr><td style="color:var(--accent)">${safeText(p.permit_id)}</td><td>${safeText(p.job_id)}</td><td style="color:var(--muted)">${safeText(p.permit_type)}</td><td>${safeText(p.expiration_date)}</td><td style="color:${p.days_until_expiry<=7?'var(--red)':'var(--amber)'}">${safeText(p.days_until_expiry,0)}d<span class="amber-tag">EXPIRING</span></td></tr>`
   ).join('') || emptyRow(5, 'No permits expiring soon.');
 
   renderPermitsTable(data.permits||[]);
@@ -912,16 +937,16 @@ function renderPermitsTable(permits) {
   const filtered = currentPermitFilter==='ALL' ? permits : permits.filter(p=>p.status===currentPermitFilter);
   const statusCls = s => s==='Approved'?'s-approved':s==='Blocked'?'s-blocked':s==='Expired'?'s-expired':'s-pending';
   document.getElementById('permits-tbody').innerHTML = filtered.map(p =>
-    `<tr><td style="color:var(--accent)">${p.permit_id}</td><td>${p.job_id}</td><td>${p.permit_type}</td><td style="color:var(--muted)">${p.issuing_authority}</td><td style="color:var(--muted)">${p.applied_date||'—'}</td><td style="color:${p.expiring_soon?'var(--amber)':p.days_until_expiry<0?'var(--red)':'var(--muted)'}">${p.expiration_date||'—'}${p.expiring_soon?'<span class="amber-tag">SOON</span>':''}</td><td style="color:${p.days_waiting>21?'var(--amber)':'var(--muted)'}">${p.days_waiting||0}d</td><td><span class="status-pill ${statusCls(p.status)}">${p.status}</span></td><td style="color:var(--muted);max-width:160px;white-space:normal">${p.blocked_reason||'—'}</td></tr>`
+    `<tr><td style="color:var(--accent)">${safeText(p.permit_id)}</td><td>${safeText(p.job_id)}</td><td>${safeText(p.permit_type)}</td><td style="color:var(--muted)">${safeText(p.issuing_authority)}</td><td style="color:var(--muted)">${safeText(p.applied_date)}</td><td style="color:${p.expiring_soon?'var(--amber)':p.days_until_expiry<0?'var(--red)':'var(--muted)'}">${safeText(p.expiration_date)}${p.expiring_soon?'<span class="amber-tag">SOON</span>':''}</td><td style="color:${p.days_waiting>21?'var(--amber)':'var(--muted)'}">${safeText(p.days_waiting,0)}d</td><td><span class="status-pill ${statusCls(p.status)}">${safeText(p.status)}</span></td><td style="color:var(--muted);max-width:160px;white-space:normal">${safeText(p.blocked_reason)}</td></tr>`
   ).join('') || emptyRow(9, 'No permits match this filter.');
 }
 
 function renderContractors(contractors) {
   if (!contractors||!contractors.length) { document.getElementById('contractor-grid').innerHTML='<div style="color:var(--muted);font-family:var(--font-mono)">No contractor data.</div>'; return; }
-  const maxRisk = Math.max(...contractors.map(c=>c.contractor_risk_factor));
+  const maxRisk = Math.max(...contractors.map(c=>toNum(c.contractor_risk_factor, 0)), 1);
   document.getElementById('contractor-grid').innerHTML = contractors.map(c => {
-    const pct = Math.round((c.contractor_risk_factor/maxRisk)*100);
-    return `<div class="contractor-card" data-contractor="${c.contractor}" style="cursor:pointer"><div class="contractor-rank">#${c.rank} of ${contractors.length}</div><div class="contractor-name">${c.contractor}</div><div class="contractor-stats"><div class="stat-item"><div class="stat-label">Avg Delay</div><div class="stat-value" style="color:${c.avg_delay_days>10?'var(--red)':'var(--green)'}">${c.avg_delay_days}d</div></div><div class="stat-item"><div class="stat-label">Jobs</div><div class="stat-value">${c.job_count}</div></div><div class="stat-item"><div class="stat-label">Markout Issues</div><div class="stat-value" style="color:${c.avg_markout_issues>1?'var(--amber)':'var(--muted)'}">${c.avg_markout_issues}</div></div><div class="stat-item"><div class="stat-label">Insp Fail Rate</div><div class="stat-value" style="color:${c.inspection_fail_rate>1?'var(--amber)':'var(--muted)'}">${c.inspection_fail_rate}</div></div></div><div class="risk-meter"><div class="risk-meter-label"><span>Risk Factor</span><span style="color:var(--text)">${c.contractor_risk_factor}</span></div><div class="risk-meter-bar"><div class="risk-meter-fill" style="width:${pct}%"></div></div></div></div>`;
+    const pct = Math.min(100, Math.max(0, Math.round((toNum(c.contractor_risk_factor, 0)/maxRisk)*100)));
+    return `<div class="contractor-card" data-contractor="${safeText(c.contractor, '')}" style="cursor:pointer"><div class="contractor-rank">#${safeText(c.rank, 0)} of ${contractors.length}</div><div class="contractor-name">${safeText(c.contractor)}</div><div class="contractor-stats"><div class="stat-item"><div class="stat-label">Avg Delay</div><div class="stat-value" style="color:${c.avg_delay_days>10?'var(--red)':'var(--green)'}">${safeText(c.avg_delay_days,0)}d</div></div><div class="stat-item"><div class="stat-label">Jobs</div><div class="stat-value">${safeText(c.job_count,0)}</div></div><div class="stat-item"><div class="stat-label">Markout Issues</div><div class="stat-value" style="color:${c.avg_markout_issues>1?'var(--amber)':'var(--muted)'}">${safeText(c.avg_markout_issues,0)}</div></div><div class="stat-item"><div class="stat-label">Insp Fail Rate</div><div class="stat-value" style="color:${c.inspection_fail_rate>1?'var(--amber)':'var(--muted)'}">${safeText(c.inspection_fail_rate,0)}</div></div></div><div class="risk-meter"><div class="risk-meter-label"><span>Risk Factor</span><span style="color:var(--text)">${safeText(c.contractor_risk_factor,0)}</span></div><div class="risk-meter-bar"><div class="risk-meter-fill" style="width:${pct}%"></div></div></div></div>`;
   }).join('');
 }
 
@@ -966,7 +991,8 @@ document.getElementById('jobs-tbody').addEventListener('click', e => {
 
 function showJobModal(job) {
   document.getElementById('jm-title').textContent = job.job_id + ' — ' + job.contractor;
-  document.getElementById('jm-risk-pill').innerHTML = `<span class="risk-pill risk-${job.risk_level}">${job.risk_level}</span>`;
+  const baseRiskLevel = safeRiskLevel(job.risk_level);
+  document.getElementById('jm-risk-pill').innerHTML = `<span class="risk-pill ${baseRiskLevel ? 'risk-' + baseRiskLevel : ''}">${safeText(job.risk_level)}</span>`;
 
   const permitInfo = (globalData.permits_by_job || {})[job.job_id] || null;
   const rfiInfo    = (globalData.rfi_by_job    || {})[job.job_id] || null;
@@ -975,7 +1001,7 @@ function showJobModal(job) {
   function row(label, value, color) {
     return `<div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid rgba(30,35,48,.5)">
       <span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">${label}</span>
-      <span style="font-family:var(--font-mono);font-size:.72rem;color:${color||'var(--text)'};font-weight:500">${value??'—'}</span>
+      <span style="font-family:var(--font-mono);font-size:.72rem;color:${color||'var(--text)'};font-weight:500">${safeText(value)}</span>
     </div>`;
   }
   function section(title, html) {
@@ -1016,7 +1042,7 @@ function showJobModal(job) {
       row('Contractor Risk Factor', job.contractor_risk_factor) +
       `<div style="padding:.45rem 0;border-bottom:1px solid rgba(30,35,48,.5)">
         <div style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Risk Reasons</div>
-        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--text);line-height:1.5">${job.risk_reasons||'—'}</div>
+          <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--text);line-height:1.5">${safeText(job.risk_reasons)}</div>
       </div>`
     )}
     ${section('ML Prediction',
@@ -1030,7 +1056,7 @@ function showJobModal(job) {
             <div style="height:6px;background:var(--border);border-radius:3px"><div style="width:${mlProb}%;height:100%;background:${mlColor};border-radius:3px"></div></div>
            </div>` +
           row('Expected Delay', (job.ml_expected_delay_days||0) + 'd', job.ml_expected_delay_days > 0 ? 'var(--amber)' : 'var(--muted)') +
-          row('ML Risk Level', job.ml_risk_level, mlColor) +
+              row('ML Risk Level', safeText(job.ml_risk_level), mlColor) +
           row('Confidence', job.ml_confidence)
     )}
     ${permitInfo ? section('Permits',
@@ -1129,7 +1155,7 @@ function showJobModal(job) {
   const existingNote = notesCache[job.job_id];
   html += `<div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
     <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem">Notes / Annotations</div>
-    <textarea class="notes-textarea" id="jm-note-text" placeholder="Add a note for this job…">${existingNote?.text || ''}</textarea>
+    <textarea class="notes-textarea" id="jm-note-text" placeholder="Add a note for this job…"></textarea>
     <div style="display:flex;align-items:center;gap:.75rem;margin-top:.6rem">
       <button id="jm-note-save" style="padding:.45rem 1rem;background:var(--accent);border:none;color:var(--bg);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:.7rem;font-weight:600">Save Note</button>
       <span id="jm-note-status" style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">${existingNote ? 'Saved ' + new Date(existingNote.updated_at).toLocaleString() : ''}</span>
@@ -1137,6 +1163,7 @@ function showJobModal(job) {
   </div>`;
 
   document.getElementById('jm-body').innerHTML = html;
+  document.getElementById('jm-note-text').value = existingNote?.text || '';
 
   document.getElementById('jm-note-save').addEventListener('click', async () => {
     const text = document.getElementById('jm-note-text').value;
@@ -1278,26 +1305,28 @@ function renderTrends(current, prev) {
       const isWorse = worsened.includes(j) || newHigh.includes(j);
       const arrow = isWorse ? '↑' : '↓';
       const arrowColor = isWorse ? 'var(--red)' : 'var(--green)';
-      const prevLabel = j.prev_level ? `<span class="risk-pill risk-${j.prev_level}">${j.prev_level}</span>` : '<span style="color:var(--muted);font-family:var(--font-mono);font-size:.65rem">NEW</span>';
+      const prevLevel = safeRiskLevel(j.prev_level);
+      const prevLabel = j.prev_level ? `<span class="risk-pill ${prevLevel ? 'risk-' + prevLevel : ''}">${safeText(j.prev_level)}</span>` : '<span style="color:var(--muted);font-family:var(--font-mono);font-size:.65rem">NEW</span>';
       const deltaColor = (j.score_delta||0) > 0 ? 'var(--red)' : 'var(--green)';
-      return `<tr data-job-id="${j.job_id}" style="cursor:pointer">
-        <td style="color:var(--accent);font-weight:500">${j.job_id}</td>
-        <td>${j.contractor}</td>
-        <td style="color:var(--muted)">${j.scope_type}</td>
-        <td style="color:var(--muted)">${j.region}</td>
+      const level = safeRiskLevel(j.risk_level);
+      return `<tr data-job-id="${safeText(j.job_id, '')}" style="cursor:pointer">
+        <td style="color:var(--accent);font-weight:500">${safeText(j.job_id, '')}</td>
+        <td>${safeText(j.contractor)}</td>
+        <td style="color:var(--muted)">${safeText(j.scope_type)}</td>
+        <td style="color:var(--muted)">${safeText(j.region)}</td>
         <td>${prevLabel}</td>
-        <td><span style="color:${arrowColor};margin-right:.3rem">${arrow}</span><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>
-        <td style="font-family:var(--font-mono);font-size:.72rem;color:${deltaColor}">${(j.score_delta||0)>0?'+':''}${j.score_delta||'—'}</td>
+        <td><span style="color:${arrowColor};margin-right:.3rem">${arrow}</span><span class="risk-pill ${level ? 'risk-' + level : ''}">${safeText(j.risk_level)}</span></td>
+        <td style="font-family:var(--font-mono);font-size:.72rem;color:${deltaColor}">${safeText((j.score_delta||0)>0?('+' + j.score_delta):(j.score_delta||'—'))}</td>
       </tr>`;
     }).join('');
 
     // clicking trend rows also opens modal
-    document.getElementById('trend-tbody').addEventListener('click', e => {
+    document.getElementById('trend-tbody').onclick = e => {
       const row = e.target.closest('tr[data-job-id]');
       if (!row || !globalData) return;
       const job = globalData.scored_jobs.find(j => j.job_id === row.dataset.jobId);
       if (job) showJobModal(job);
-    });
+    };
   }
 }
 
@@ -1350,8 +1379,8 @@ function showContractorModal(name) {
     </div>`).join('')}</div>`;
 
   // Risk meter
-  const maxRisk = Math.max(...(globalData.ranked_contractors||[]).map(x=>x.contractor_risk_factor));
-  const pct = Math.round((c.contractor_risk_factor/maxRisk)*100);
+  const maxRisk = Math.max(...(globalData.ranked_contractors||[]).map(x=>toNum(x.contractor_risk_factor, 0)), 1);
+  const pct = Math.min(100, Math.max(0, Math.round((toNum(c.contractor_risk_factor, 0)/maxRisk)*100)));
   const meterHtml = `<div style="margin-bottom:1.5rem">
     <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.65rem;color:var(--muted);margin-bottom:.4rem">
       <span>RISK FACTOR</span><span style="color:${riskColor};font-weight:600">${c.contractor_risk_factor}</span>
@@ -1369,13 +1398,14 @@ function showContractorModal(name) {
     <tbody>${myActive.map(j=>{
       const mlProb = j.ml_delay_probability;
       const mlColor = mlProb==null?'var(--muted)':mlProb>=60?'var(--red)':mlProb>=30?'var(--amber)':'var(--green)';
-      return `<tr data-job-id="${j.job_id}" style="cursor:pointer">
-        <td style="color:var(--accent);font-weight:500">${j.job_id}</td>
-        <td style="color:var(--muted)">${j.scope_type}</td>
-        <td style="color:var(--muted)">${j.region}</td>
-        <td>${j.actual_duration_days||0}</td>
-        <td style="color:${(j.delay_days||0)>0?'var(--red)':'var(--muted)'}">${j.delay_days||0}d</td>
-        <td><span class="risk-pill risk-${j.risk_level}">${j.risk_level}</span></td>
+      const level = safeRiskLevel(j.risk_level);
+      return `<tr data-job-id="${safeText(j.job_id, '')}" style="cursor:pointer">
+        <td style="color:var(--accent);font-weight:500">${safeText(j.job_id, '')}</td>
+        <td style="color:var(--muted)">${safeText(j.scope_type)}</td>
+        <td style="color:var(--muted)">${safeText(j.region)}</td>
+        <td>${safeText(j.actual_duration_days,0)}</td>
+        <td style="color:${(j.delay_days||0)>0?'var(--red)':'var(--muted)'}">${safeText(j.delay_days,0)}d</td>
+        <td><span class="risk-pill ${level ? 'risk-' + level : ''}">${safeText(j.risk_level)}</span></td>
         <td style="font-family:var(--font-mono);font-size:.7rem;color:${mlColor}">${mlProb!=null?mlProb+'%':'—'}</td>
       </tr>`;
     }).join('')}</tbody></table></div></div>` : '';
@@ -1387,12 +1417,12 @@ function showContractorModal(name) {
     <div class="table-wrap"><div style="overflow-x:auto">
     <table><thead><tr><th>Job ID</th><th>Scope</th><th>Region</th><th>Duration</th><th>Delay</th><th>Delay %</th></tr></thead>
     <tbody>${topCompleted.map(j=>`<tr>
-      <td style="color:var(--accent);font-weight:500">${j.job_id}</td>
-      <td style="color:var(--muted)">${j.scope_type}</td>
-      <td style="color:var(--muted)">${j.region}</td>
-      <td>${j.actual_duration_days||0}d</td>
-      <td style="color:${(j.delay_days||0)>0?'var(--red)':'var(--muted)'}">${j.delay_days||0}d</td>
-      <td style="color:var(--muted)">${j.delay_pct||0}%</td>
+      <td style="color:var(--accent);font-weight:500">${safeText(j.job_id, '')}</td>
+      <td style="color:var(--muted)">${safeText(j.scope_type)}</td>
+      <td style="color:var(--muted)">${safeText(j.region)}</td>
+      <td>${safeText(j.actual_duration_days,0)}d</td>
+      <td style="color:${(j.delay_days||0)>0?'var(--red)':'var(--muted)'}">${safeText(j.delay_days,0)}d</td>
+      <td style="color:var(--muted)">${safeText(j.delay_pct,0)}%</td>
     </tr>`).join('')}</tbody></table></div></div>` : '';
 
   document.getElementById('cm-body').innerHTML = kpiHtml + meterHtml + activeHtml + completedHtml;
@@ -1488,7 +1518,7 @@ function renderColumnMapper(data) {
   container.innerHTML = fields.map(field => {
     const suggested = data.suggested_mapping[field];
     const options = data.headers.map((h,i) => 
-      `<option value="${i}" ${i===suggested?'selected':''}>${h}</option>`
+      `<option value="${i}" ${i===suggested?'selected':''}>${safeText(h, '')}</option>`
     ).join('');
     return `<div style="margin-bottom:1rem">
       <label style="display:block;font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.05em">${field.replace(/_/g,' ')}</label>
@@ -2056,11 +2086,11 @@ function buildAlerts(data) {
     return;
   }
   list.innerHTML = alerts.map(a => `
-    <div class="alert-item" data-alert-job="${a.jobId || ''}">
+    <div class="alert-item" data-alert-job="${safeText(a.jobId || '', '')}">
       <div style="width:7px;height:7px;border-radius:50%;background:${a.color};flex-shrink:0;margin-top:.25rem"></div>
       <div>
-        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--text);font-weight:500;margin-bottom:.15rem">${a.text}</div>
-        <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);line-height:1.4">${a.sub}</div>
+        <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--text);font-weight:500;margin-bottom:.15rem">${escapeHtml(a.text)}</div>
+        <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);line-height:1.4">${escapeHtml(a.sub)}</div>
       </div>
     </div>`).join('');
 
@@ -2193,19 +2223,19 @@ function renderGantt(data) {
     const riskDot  = j.risk_level==='HIGH'?'var(--red)':j.risk_level==='MEDIUM'?'var(--amber)':'var(--green)';
     const noteIcon = notesCache[j.job_id]?.text ? ' <span class="note-tag">note</span>' : '';
 
-    return `<div class="gantt-row" data-job-id="${j.job_id}">
+    return `<div class="gantt-row" data-job-id="${safeText(j.job_id, '')}">
       <div class="gantt-label">
         <span style="width:6px;height:6px;border-radius:50%;background:${riskDot};flex-shrink:0"></span>
-        <span class="gantt-label-id">${j.job_id}${noteIcon}</span>
-        <span class="gantt-label-name" title="${j.contractor}">${j.contractor}</span>
+        <span class="gantt-label-id">${safeText(j.job_id, '')}${noteIcon}</span>
+        <span class="gantt-label-name" title="${safeText(j.contractor)}">${safeText(j.contractor)}</span>
       </div>
       <div class="gantt-track" style="min-width:${totalDays*GANTT_PX}px">
         <!-- Planned (background) -->
-        <div style="position:absolute;left:${leftPx}px;width:${planW}px;height:7px;top:7px;background:var(--border);border-radius:2px" title="Planned: ${j.planned_duration_days||'?'}d"></div>
+        <div style="position:absolute;left:${leftPx}px;width:${planW}px;height:7px;top:7px;background:var(--border);border-radius:2px" title="Planned: ${safeText(j.planned_duration_days,'?')}d"></div>
         <!-- Actual progress -->
         <div style="position:absolute;left:${leftPx}px;width:${actBarW}px;height:7px;top:21px;background:${actColor};border-radius:2px 0 0 2px" title="Actual: ~${Math.round((dActual-dStart)/86400000)}d"></div>
         <!-- Overrun extension -->
-        ${overrunW > 0 ? `<div style="position:absolute;left:${leftPx+planW}px;width:${overrunW}px;height:7px;top:21px;background:var(--red);border-radius:0 2px 2px 0" title="${j.delay_days}d overrun"></div>` : ''}
+        ${overrunW > 0 ? `<div style="position:absolute;left:${leftPx+planW}px;width:${overrunW}px;height:7px;top:21px;background:var(--red);border-radius:0 2px 2px 0" title="${safeText(j.delay_days,0)}d overrun"></div>` : ''}
       </div>
     </div>`;
   }).join('');

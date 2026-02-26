@@ -226,6 +226,8 @@ def upload():
             permit_path=tmp_paths.get('permit_file'),
         )
         save_session(result)
+        global _last_dashboard_data
+        _last_dashboard_data = result
         return app.response_class(
             response=json.dumps(result, default=serialize),
             mimetype='application/json'
@@ -257,6 +259,8 @@ def sample():
             permit_path=paths['permit'] if os.path.exists(paths['permit']) else None,
         )
         save_session(result)
+        global _last_dashboard_data
+        _last_dashboard_data = result
         return app.response_class(
             response=json.dumps(result, default=serialize),
             mimetype='application/json'
@@ -315,7 +319,7 @@ def sheets_disconnect():
 @app.route('/api/sheets/preview', methods=['POST'])
 def sheets_preview():
     """Preview spreadsheet data and suggest column mapping."""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     sheet_url = data.get('url')
     
     if not sheet_url:
@@ -361,7 +365,7 @@ def sheets_preview():
 @app.route('/api/sheets/import', methods=['POST'])
 def sheets_import():
     """Import data from Google Sheets using column mapping."""
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     spreadsheet_id = data.get('spreadsheet_id')
     sheet_name = data.get('sheet_name')
     column_mapping = data.get('column_mapping')
@@ -393,6 +397,9 @@ def sheets_import():
     
     try:
         result = run_pipeline(tmp.name)
+        save_session(result)
+        global _last_dashboard_data
+        _last_dashboard_data = result
         return app.response_class(
             response=json.dumps(result, default=serialize),
             mimetype='application/json'
@@ -514,9 +521,11 @@ def update_email_settings():
 
 @app.route('/api/send-weekly-report', methods=['POST'])
 def send_weekly_report_route():
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({'error': 'No dashboard data provided'}), 400
+    global _last_dashboard_data
+    _last_dashboard_data = data.get('data', data)
     cfg = load_config()
     recipients = data.get('recipients') or cfg.get('recipients', [])
     if not recipients:
