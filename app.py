@@ -815,8 +815,9 @@ def save_cost_config():
 
 if __name__ == '__main__':
     os.makedirs('static', exist_ok=True)
+    port = int(os.environ.get('PORT', 5000))
     print("\n" + "━" * 50)
     print("  PRG Risk Intelligence — Web App")
-    print("  Open: http://127.0.0.1:5000")
+    print(f"  Open: http://127.0.0.1:{port}")
     print("━" * 50 + "\n")
-    app.run(debug=False, port=5000)
+    app.run(debug=False, host='0.0.0.0', port=port)
