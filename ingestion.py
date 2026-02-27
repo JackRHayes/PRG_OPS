@@ -60,10 +60,16 @@ def load_jobs(file_path: str) -> list[dict]:
     rows = []
 
     if ext == ".csv":
-        with open(file_path, newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                rows.append(dict(row))
+        # Try common encodings in order; many exported CSVs use UTF-8-sig or latin-1
+        for encoding in ("utf-8-sig", "utf-8", "latin-1"):
+            try:
+                with open(file_path, newline="", encoding=encoding) as f:
+                    reader = csv.DictReader(f)
+                    rows = [dict(row) for row in reader]
+                break
+            except UnicodeDecodeError:
+                rows = []
+                continue
 
     elif ext in (".xlsx", ".xls"):
         if not XLSX_SUPPORTED:

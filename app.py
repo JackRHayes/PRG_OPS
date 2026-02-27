@@ -40,8 +40,14 @@ from email_scheduler import (
 )
 
 app = Flask(__name__, static_folder='static')
-app.secret_key = os.urandom(24)  # For session management
+# Use a stable secret key so sessions survive server restarts
+app.secret_key = os.environ.get('PRG_SECRET_KEY', 'prg-ops-dev-key-change-in-production')
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    datefmt='%H:%M:%S',
+)
 logger = logging.getLogger(__name__)
 
 LAST_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
@@ -692,7 +698,7 @@ CONTRACTOR RANKINGS (by risk factor):
     try:
         client = _anthropic.Anthropic(api_key=api_key)
         msg = client.messages.create(
-            model='claude-haiku-4-5-20251001',
+            model='claude-3-5-haiku-20241022',
             max_tokens=512,
             system=system_prompt,
             messages=[{'role': 'user', 'content': question}],

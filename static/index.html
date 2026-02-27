@@ -214,7 +214,7 @@
       <div id="sheets-disconnected" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem">
         <h3 style="margin:0 0 1rem 0;font-size:1rem;color:var(--text)">Connect to Google Sheets</h3>
         <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono);line-height:1.6">Automatically sync your job data from Google Sheets. Your data will refresh every 4 hours.</p>
-        <button id="btn-connect-sheets" style="padding:0.75rem 1.5rem;background:var(--blue);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.8rem;font-weight:600">Connect Google Sheets</button>
+        <button id="btn-connect-sheets" style="padding:0.75rem 1.5rem;background:var(--accent);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.8rem;font-weight:600">Connect Google Sheets</button>
       </div>
 
       <div id="sheets-connected" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem">
@@ -299,7 +299,7 @@
 
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
           <button id="btn-save-email-settings" style="padding:0.65rem 1.25rem;background:var(--accent);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Save Settings</button>
-          <button id="btn-send-test-report" style="padding:0.65rem 1.25rem;background:var(--blue);border:none;color:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Send Test Now</button>
+          <button id="btn-send-test-report" style="padding:0.65rem 1.25rem;background:var(--accent);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Send Test Now</button>
           <button id="btn-preview-email" style="padding:0.65rem 1.25rem;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem">Preview Email</button>
           <span id="email-settings-status" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--muted)"></span>
         </div>
@@ -338,7 +338,7 @@
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-top:1rem">
         <h3 style="margin:0 0 0.5rem 0;font-size:1rem;color:var(--text)">Model Calibration & Trust</h3>
         <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono);line-height:1.6">Evaluate how well the ML model performs against completed jobs. Load data and train the model first.</p>
-        <button id="btn-run-calibration" style="padding:0.65rem 1.25rem;background:var(--blue);border:none;color:#fff;border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Run Calibration Check</button>
+        <button id="btn-run-calibration" style="padding:0.65rem 1.25rem;background:var(--accent);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Run Calibration Check</button>
         <div id="calibration-results" style="display:none;margin-top:1.5rem">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
             <span id="calib-trust-badge" style="font-family:var(--font-mono);font-size:.8rem;font-weight:700;padding:.35rem .85rem;border-radius:5px"></span>
@@ -440,6 +440,57 @@
     </div>
   </div>
 </div>
+
+
+
+<!-- CONTRACTOR MODAL -->
+<div id="contractor-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:780px;width:100%;max-height:88vh;overflow-y:auto">
+    <div style="padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.3rem">Contractor Scorecard</div>
+        <div id="cm-title" style="font-size:1.15rem;font-weight:700;color:var(--text)"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <span id="cm-rank" style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)"></span>
+        <button onclick="document.getElementById('contractor-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.9rem;padding:.3rem .6rem;border-radius:5px;line-height:1">✕</button>
+      </div>
+    </div>
+    <div id="cm-body" style="padding:1.5rem 2rem"></div>
+  </div>
+</div>
+
+<!-- JOB DETAIL MODAL -->
+<div id="job-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:700px;width:100%;max-height:88vh;overflow-y:auto">
+    <div style="padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.3rem">Job Detail</div>
+        <div id="jm-title" style="font-size:1.15rem;font-weight:700;color:var(--accent)"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.75rem">
+        <span id="jm-risk-pill"></span>
+        <button onclick="document.getElementById('job-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.9rem;padding:.3rem .6rem;border-radius:5px;line-height:1">✕</button>
+      </div>
+    </div>
+    <div id="jm-body" style="padding:1.5rem 2rem"></div>
+  </div>
+</div>
+
+<!-- EMAIL MODAL -->
+<div id="email-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;max-width:400px;width:90%">
+    <h3 style="margin:0 0 1rem 0;font-size:1.1rem;color:var(--text)">Send Email Report</h3>
+    <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono)">Enter your email to receive the weekly risk report.</p>
+    <input type="email" id="email-input" placeholder="your@email.com" style="width:100%;padding:0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.85rem;margin-bottom:1rem">
+    <div style="display:flex;gap:0.75rem;justify-content:flex-end">
+      <button id="email-cancel" style="padding:0.6rem 1.2rem;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem">Cancel</button>
+      <button id="email-send" style="padding:0.6rem 1.2rem;background:var(--accent);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Send</button>
+    </div>
+    <p id="email-status" style="margin:1rem 0 0 0;font-size:0.75rem;font-family:var(--font-mono);text-align:center"></p>
+  </div>
+</div>
+<script src="/static/ui.js" defer></script>
 
 
 <script>
@@ -1007,7 +1058,7 @@ function showJobModal(job) {
           </div>
         </div>
         <button id="wi-run-btn" data-job-id="${job.job_id}"
-          style="padding:.45rem 1rem;background:var(--blue);border:none;color:#fff;border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:.72rem;font-weight:600;transition:opacity .2s">
+          style="padding:.45rem 1rem;background:var(--accent);border:none;color:var(--bg);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:.72rem;font-weight:600;transition:opacity .2s">
           Run Simulation
         </button>
         <div id="wi-results" style="display:none;margin-top:.85rem">
@@ -2124,54 +2175,5 @@ function renderGantt(data) {
   });
 }
 </script>
-
-<!-- CONTRACTOR MODAL -->
-<div id="contractor-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:1rem">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:780px;width:100%;max-height:88vh;overflow-y:auto">
-    <div style="padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1">
-      <div>
-        <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.3rem">Contractor Scorecard</div>
-        <div id="cm-title" style="font-size:1.15rem;font-weight:700;color:var(--text)"></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:.75rem">
-        <span id="cm-rank" style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)"></span>
-        <button onclick="document.getElementById('contractor-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.9rem;padding:.3rem .6rem;border-radius:5px;line-height:1">✕</button>
-      </div>
-    </div>
-    <div id="cm-body" style="padding:1.5rem 2rem"></div>
-  </div>
-</div>
-
-<!-- JOB DETAIL MODAL -->
-<div id="job-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:1rem">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:700px;width:100%;max-height:88vh;overflow-y:auto">
-    <div style="padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1">
-      <div>
-        <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.3rem">Job Detail</div>
-        <div id="jm-title" style="font-size:1.15rem;font-weight:700;color:var(--accent)"></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:.75rem">
-        <span id="jm-risk-pill"></span>
-        <button onclick="document.getElementById('job-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.9rem;padding:.3rem .6rem;border-radius:5px;line-height:1">✕</button>
-      </div>
-    </div>
-    <div id="jm-body" style="padding:1.5rem 2rem"></div>
-  </div>
-</div>
-
-<!-- EMAIL MODAL -->
-<div id="email-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;max-width:400px;width:90%">
-    <h3 style="margin:0 0 1rem 0;font-size:1.1rem;color:var(--text)">Send Email Report</h3>
-    <p style="margin:0 0 1.5rem 0;font-size:0.8rem;color:var(--muted);font-family:var(--font-mono)">Enter your email to receive the weekly risk report.</p>
-    <input type="email" id="email-input" placeholder="your@email.com" style="width:100%;padding:0.75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:0.85rem;margin-bottom:1rem">
-    <div style="display:flex;gap:0.75rem;justify-content:flex-end">
-      <button id="email-cancel" style="padding:0.6rem 1.2rem;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem">Cancel</button>
-      <button id="email-send" style="padding:0.6rem 1.2rem;background:var(--blue);border:none;color:var(--bg);border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:0.75rem;font-weight:600">Send</button>
-    </div>
-    <p id="email-status" style="margin:1rem 0 0 0;font-size:0.75rem;font-family:var(--font-mono);text-align:center"></p>
-  </div>
-</div>
-<script src="/static/ui.js" defer></script>
 </body>
 </html>
