@@ -99,7 +99,7 @@ def get_permits_by_job(permits: list[dict]) -> dict:
         jid = p["job_id"]
         by_job[jid]["total"] += 1
         status = p["status"].lower()
-        if "approved" in status:
+        if status == "approved":
             by_job[jid]["approved"] += 1
         if status in ("applied", "pending"):
             by_job[jid]["pending"] += 1

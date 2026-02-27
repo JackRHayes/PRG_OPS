@@ -38,7 +38,6 @@ def load_submittals(file_path: str) -> list[dict]:
     submittals = []
     with open(file_path, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            overdue_val = str(row.get("overdue", "False")).strip().lower()
             submittals.append({
                 "submittal_id": row.get("submittal_id", "").strip(),
                 "job_id": row.get("job_id", "").strip(),
@@ -47,7 +46,7 @@ def load_submittals(file_path: str) -> list[dict]:
                 "required_by_date": parse_date(row.get("required_by_date")),
                 "reviewed_date": parse_date(row.get("reviewed_date")),
                 "status": row.get("status", "").strip(),
-                "overdue": overdue_val in ("true", "1", "yes"),
+                "overdue": False,
                 "resubmit_count": int(row.get("resubmit_count", 0) or 0),
             })
     return submittals

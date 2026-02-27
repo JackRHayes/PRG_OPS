@@ -8,7 +8,9 @@ Then open: http://127.0.0.1:5000
 import sys
 import os
 import io
+import re
 import json
+import logging
 import tempfile
 from datetime import date
 
@@ -40,6 +42,8 @@ from email_scheduler import (
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.urandom(24)  # For session management
 
+logger = logging.getLogger(__name__)
+
 LAST_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
 PREV_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'prev_session.json')
 RISK_HISTORY_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'risk_history.json')
@@ -66,7 +70,7 @@ def save_risk_history(summary: dict):
         with open(RISK_HISTORY_PATH, 'w') as f:
             json.dump(history, f)
     except Exception as e:
-        print(f"[HISTORY] Failed to save: {e}")
+        logger.error(f"[HISTORY] Failed to save: {e}")
 
 
 def save_session(data: dict):
@@ -79,7 +83,7 @@ def save_session(data: dict):
             json.dump(data, f, default=serialize)
         save_risk_history(data.get('summary', {}))
     except Exception as e:
-        print(f"[SESSION] Failed to save: {e}")
+        logger.error(f"[SESSION] Failed to save: {e}")
 
 
 def serialize(obj):
@@ -189,7 +193,8 @@ def last_session():
             with open(LAST_SESSION_PATH) as f:
                 return app.response_class(response=f.read(), mimetype='application/json')
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            logger.error(f"[last-session] {e}")
+            return jsonify({'error': 'Internal server error'}), 500
     return jsonify({'error': 'No saved session'}), 404
 
 
@@ -200,7 +205,8 @@ def prev_session():
             with open(PREV_SESSION_PATH) as f:
                 return app.response_class(response=f.read(), mimetype='application/json')
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            logger.error(f"[prev-session] {e}")
+            return jsonify({'error': 'Internal server error'}), 500
     return jsonify({'error': 'No previous session'}), 404
 
 
@@ -233,11 +239,12 @@ def upload():
             mimetype='application/json'
         )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[upload] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
     finally:
         for p in tmp_paths.values():
             try: os.unlink(p)
-            except: pass
+            except OSError: pass
 
 
 @app.route('/api/sample')
@@ -266,7 +273,8 @@ def sample():
             mimetype='application/json'
         )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[sample] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 # ── Google Sheets Integration ─────────────────────────────────────────────────
@@ -281,7 +289,8 @@ def sheets_connect():
         auth_url = connector.get_auth_url(redirect_uri)
         return jsonify({'auth_url': auth_url})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[sheets/connect] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/oauth2callback')
@@ -337,7 +346,8 @@ def sheets_preview():
     try:
         info = connector.get_spreadsheet_info(spreadsheet_id)
     except Exception as e:
-        return jsonify({'error': f'Unable to access spreadsheet: {e}'}), 500
+        logger.error(f"[sheets/preview] {e}")
+        return jsonify({'error': 'Unable to access spreadsheet'}), 500
     if not info:
         return jsonify({'error': 'Unable to access spreadsheet'}), 500
     
@@ -405,7 +415,8 @@ def sheets_import():
             mimetype='application/json'
         )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[sheets/import] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
     finally:
         os.unlink(tmp.name)
 
@@ -421,23 +432,25 @@ def send_test_email():
         
         if not recipient:
             return jsonify({'error': 'Email address required'}), 400
+        if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', recipient):
+            return jsonify({'error': 'Invalid email address format'}), 400
         if not report_data:
             return jsonify({'error': 'No data provided'}), 400
-        
+
         success = send_weekly_report(report_data, recipient)
-        
+
         if success:
             return jsonify({'message': f'Test email sent to {recipient}'})
         else:
             return jsonify({'error': 'Failed to send email. Check SMTP configuration.'}), 500
-    
+
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[send-test-email] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 # ── PDF Export ────────────────────────────────────────────────────────────────
 from flask import send_file
-import pickle
 
 @app.route('/api/export-pdf', methods=['POST'])
 def export_pdf():
@@ -457,7 +470,8 @@ def export_pdf():
             download_name=f'PRG_Risk_Report_{today}.pdf'
         )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[export-pdf] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 # ── ML Model ──────────────────────────────────────────────────────────────────
@@ -554,7 +568,8 @@ def risk_history():
             with open(RISK_HISTORY_PATH) as f:
                 return app.response_class(response=f.read(), mimetype='application/json')
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            logger.error(f"[risk-history] {e}")
+            return jsonify({'error': 'Internal server error'}), 500
     return jsonify([])
 
 
@@ -566,7 +581,8 @@ def get_notes():
             with open(NOTES_PATH) as f:
                 return app.response_class(response=f.read(), mimetype='application/json')
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            logger.error(f"[notes GET] {e}")
+            return jsonify({'error': 'Internal server error'}), 500
     return jsonify({})
 
 
@@ -591,7 +607,8 @@ def save_note():
             json.dump(notes, f, indent=2)
         return jsonify({'ok': True, 'job_id': job_id})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[notes POST] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 # ── AI Assistant ───────────────────────────────────────────────────────────────
@@ -684,7 +701,8 @@ CONTRACTOR RANKINGS (by risk factor):
     except _anthropic.AuthenticationError:
         return jsonify({'error': 'Invalid API key. Double-check your Anthropic key in Settings.'}), 401
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[ai-query] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 # ── What-If / Calibration / Cost Config ───────────────────────────────────────
@@ -712,7 +730,8 @@ def simulate():
         with open(LAST_SESSION_PATH) as f:
             session_data = json.load(f)
     except Exception as e:
-        return jsonify({'error': f'Failed to read session: {e}'}), 500
+        logger.error(f"[simulate] Failed to read session: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
     all_jobs = session_data.get('all_jobs', [])
     job = next((j for j in all_jobs if j.get('job_id') == job_id), None)
@@ -729,7 +748,8 @@ def simulate():
         result = run_scenario(job, contractor_scores, modifications)
         return jsonify(result)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[simulate] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/calibration')
@@ -741,7 +761,8 @@ def calibration():
         with open(LAST_SESSION_PATH) as f:
             session_data = json.load(f)
     except Exception as e:
-        return jsonify({'error': f'Failed to read session: {e}'}), 500
+        logger.error(f"[calibration] Failed to read session: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
     all_jobs = session_data.get('all_jobs', [])
     completed = [j for j in all_jobs if j.get('status') == 'Completed']
@@ -752,7 +773,8 @@ def calibration():
         metrics = get_calibration_metrics(completed, contractor_scores)
         return jsonify(metrics)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[calibration] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/api/cost-config', methods=['GET'])
@@ -762,7 +784,8 @@ def get_cost_config():
             with open(COST_CONFIG_PATH) as f:
                 return jsonify(json.load(f))
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            logger.error(f"[cost-config GET] {e}")
+            return jsonify({'error': 'Internal server error'}), 500
     return jsonify(DEFAULT_COST_CONFIG)
 
 
@@ -780,7 +803,8 @@ def save_cost_config():
             json.dump(config, f, indent=2)
         return jsonify({'ok': True, 'config': config})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"[cost-config POST] {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 if __name__ == '__main__':

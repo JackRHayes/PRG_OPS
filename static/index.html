@@ -1083,7 +1083,7 @@ function showJobModal(job) {
     if (job.ml_explanation) {
       html += `<div>
         <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)">ML Explanation</div>
-        <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--text);line-height:1.55">${job.ml_explanation}</div>
+        <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--text);line-height:1.55">${safeText(job.ml_explanation)}</div>
       </div>`;
     } else {
       html += `<div></div>`;
@@ -1096,7 +1096,7 @@ function showJobModal(job) {
         <div style="display:flex;flex-direction:column;gap:.35rem">
           <div style="display:flex;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">Expected</span><span style="font-family:var(--font-mono);font-size:.75rem;color:var(--amber);font-weight:600">${fmtCost(job.ml_cost_exposure)}</span></div>
           <div style="display:flex;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">Worst-Case</span><span style="font-family:var(--font-mono);font-size:.75rem;color:var(--red);font-weight:600">${fmtCost(job.ml_cost_worst_case ?? job.ml_cost_exposure)}</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">Confidence</span><span style="font-family:var(--font-mono);font-size:.72rem;color:var(--text)">${job.ml_confidence || '—'}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">Confidence</span><span style="font-family:var(--font-mono);font-size:.72rem;color:var(--text)">${safeText(job.ml_confidence)}</span></div>
         </div>
       </div>`;
     } else {

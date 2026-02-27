@@ -333,7 +333,10 @@ def schedule_weekly_reports(get_data_fn):
     }
     send_day  = day_map.get(cfg.get('send_day', 'monday').lower(), 'mon')
     send_time = cfg.get('send_time', '08:00')
-    hour, minute = send_time.split(':')
+    try:
+        hour, minute = send_time.split(':')
+    except (ValueError, AttributeError):
+        hour, minute = 8, 0
 
     if _scheduler and _scheduler.running:
         _scheduler.shutdown(wait=False)
