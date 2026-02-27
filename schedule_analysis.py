@@ -9,11 +9,19 @@ from collections import defaultdict
 def calculate_job_duration(job: dict) -> dict:
     """
     Adds planned_duration_days and actual_duration_days to job dict.
-    Returns updated job.
+    Returns updated job. Skips calculation if date fields are absent
+    (e.g. pre-processed CSV exports that already contain these values).
     """
+    start = job.get("start_date")
+    planned_end = job.get("planned_end_date")
+
+    if start is None or planned_end is None:
+        # Keep pre-computed values if present, otherwise default to 0
+        job.setdefault("planned_duration_days", 0)
+        job.setdefault("actual_duration_days", int(job.get("actual_duration_days", 0)))
+        return job
+
     today = date.today()
-    start = job["start_date"]
-    planned_end = job["planned_end_date"]
     actual_end = job.get("actual_end_date")
     status = job["status"]
 
@@ -35,9 +43,17 @@ def calculate_delay(job: dict) -> dict:
     Adds delay_days and delay_pct to job.
     For completed jobs: actual vs planned.
     For open/in-progress: days past planned end (if any).
+    Skips calculation if planned_end_date is absent.
     """
+    planned_end = job.get("planned_end_date")
+
+    if planned_end is None:
+        # Keep pre-computed values if present, otherwise default to 0
+        job.setdefault("delay_days", int(job.get("delay_days", 0)))
+        job.setdefault("delay_pct", 0.0)
+        return job
+
     today = date.today()
-    planned_end = job["planned_end_date"]
     actual_end = job.get("actual_end_date")
     status = job["status"]
     planned_duration = job.get("planned_duration_days", 1)

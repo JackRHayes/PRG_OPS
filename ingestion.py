@@ -15,10 +15,12 @@ except ImportError:
     XLSX_SUPPORTED = False
 
 REQUIRED_FIELDS = [
-    "job_id", "utility_owner", "contractor", "scope_type", "region",
-    "start_date", "planned_end_date", "status",
-    "markout_required", "markout_issues", "inspections_failed", "crew_type",
+    "job_id", "contractor", "scope_type", "region",
+    "status", "markout_issues", "inspections_failed",
 ]
+
+# Fields that are useful but not required — CSV exports may omit them
+OPTIONAL_FIELDS = ["utility_owner", "start_date", "planned_end_date", "markout_required", "crew_type"]
 
 VALID_STATUSES = {"Open", "In Progress", "Completed"}
 
@@ -113,16 +115,19 @@ def validate_jobs(rows: list[dict], logger=None) -> tuple[list[dict], list[dict]
 
         job_id = str(row["job_id"]).strip()
 
-        # --- Date parsing ---
-        start_date = parse_date(str(row.get("start_date", "")))
-        planned_end_date = parse_date(str(row.get("planned_end_date", "")))
+        # --- Date parsing (optional — pre-processed exports may omit these) ---
+        start_date_str = str(row.get("start_date", "")).strip()
+        planned_end_str = str(row.get("planned_end_date", "")).strip()
         actual_end_str = str(row.get("actual_end_date", "")).strip()
+
+        start_date = parse_date(start_date_str) if start_date_str else None
+        planned_end_date = parse_date(planned_end_str) if planned_end_str else None
         actual_end_date = parse_date(actual_end_str) if actual_end_str else None
 
-        if start_date is None:
-            row_errors.append(f"Invalid start_date: '{row.get('start_date')}'")
-        if planned_end_date is None:
-            row_errors.append(f"Invalid planned_end_date: '{row.get('planned_end_date')}'")
+        if start_date_str and start_date is None:
+            row_errors.append(f"Invalid start_date: '{start_date_str}'")
+        if planned_end_str and planned_end_date is None:
+            row_errors.append(f"Invalid planned_end_date: '{planned_end_str}'")
         if actual_end_str and actual_end_date is None:
             row_errors.append(f"Invalid actual_end_date: '{actual_end_str}'")
 
@@ -153,10 +158,12 @@ def validate_jobs(rows: list[dict], logger=None) -> tuple[list[dict], list[dict]
             row_errors.append(f"inspections_failed must be an integer: '{row.get('inspections_failed')}'")
             inspections_failed = 0
 
-        # --- Bool check ---
-        markout_required = parse_bool(row.get("markout_required"))
+        # --- Bool check (optional) ---
+        markout_required_raw = str(row.get("markout_required", "")).strip()
+        markout_required = parse_bool(markout_required_raw)
+        if markout_required_raw and markout_required is None:
+            row_errors.append(f"markout_required must be True/False: '{markout_required_raw}'")
         if markout_required is None:
-            row_errors.append(f"markout_required must be True/False: '{row.get('markout_required')}'")
             markout_required = False
 
         if row_errors:
@@ -167,9 +174,9 @@ def validate_jobs(rows: list[dict], logger=None) -> tuple[list[dict], list[dict]
             continue
 
         # --- Clean record ---
-        clean.append({
+        record = {
             "job_id": job_id,
-            "utility_owner": str(row["utility_owner"]).strip(),
+            "utility_owner": str(row.get("utility_owner", "")).strip(),
             "contractor": str(row["contractor"]).strip(),
             "scope_type": str(row["scope_type"]).strip(),
             "region": str(row["region"]).strip(),
@@ -180,8 +187,20 @@ def validate_jobs(rows: list[dict], logger=None) -> tuple[list[dict], list[dict]
             "markout_required": markout_required,
             "markout_issues": max(0, markout_issues),
             "inspections_failed": max(0, inspections_failed),
-            "crew_type": str(row["crew_type"]).strip(),
-        })
+            "crew_type": str(row.get("crew_type", "")).strip(),
+        }
+
+        # Pass through pre-computed fields from exports (will be overwritten by
+        # schedule_analysis if date fields are present)
+        for field in ("actual_duration_days", "delay_days", "delay_pct"):
+            raw = row.get(field, "")
+            if raw is not None and str(raw).strip() != "":
+                try:
+                    record[field] = float(str(raw).strip())
+                except (ValueError, TypeError):
+                    pass
+
+        clean.append(record)
 
     return clean, errors
 
