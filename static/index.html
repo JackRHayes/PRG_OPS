@@ -836,7 +836,7 @@ document.getElementById('job-search').addEventListener('input', function() {
 
 // CSV Export
 document.getElementById('btn-export-csv').addEventListener('click', () => {
-  if (!globalData) { alert('Load data first.'); return; }
+  if (!globalData) { showToast('Load data first — upload a CSV or click Sample Data.', 'info'); return; }
   const jobs = globalData.scored_jobs || [];
   const fields = ['job_id','contractor','scope_type','region','status','actual_duration_days',
     'delay_days','markout_issues','inspections_failed','risk_score','risk_level',
@@ -1347,7 +1347,7 @@ document.getElementById('btn-connect-sheets')?.addEventListener('click', async (
       // Stop polling after 5 minutes regardless
       const pollTimeout = setTimeout(() => clearInterval(poll), 5 * 60 * 1000);
     }
-  } catch(e) { alert('Connection failed: ' + e.message); }
+  } catch(e) { showToast('Connection failed: ' + e.message, 'error'); }
 });
 
 document.getElementById('btn-disconnect-sheets')?.addEventListener('click', async () => {
@@ -1356,12 +1356,12 @@ document.getElementById('btn-disconnect-sheets')?.addEventListener('click', asyn
     await fetch('/api/sheets/disconnect', {method:'POST'});
     document.getElementById('sheets-disconnected').style.display = 'block';
     document.getElementById('sheets-connected').style.display = 'none';
-  } catch(e) { alert('Disconnect failed: ' + e.message); }
+  } catch(e) { showToast('Disconnect failed: ' + e.message, 'error'); }
 });
 
 document.getElementById('btn-preview-sheets')?.addEventListener('click', async () => {
   const url = document.getElementById('sheets-url').value.trim();
-  if (!url) { alert('Enter spreadsheet URL'); return; }
+  if (!url) { showToast('Enter a spreadsheet URL first.', 'info'); return; }
   const status = document.getElementById('sheets-status');
   status.textContent = 'Loading...';
   status.style.color = 'var(--muted)';
@@ -1436,10 +1436,10 @@ document.getElementById('btn-import-sheets')?.addEventListener('click', async ()
     if (res.ok) {
       renderDashboard(data);
     } else {
-      alert('Import failed: ' + (data.error || 'Unknown error'));
+      showToast('Import failed: ' + (data.error || 'Unknown error'), 'error');
     }
   } catch(e) {
-    alert('Import error: ' + e.message);
+    showToast('Import error: ' + e.message, 'error');
   } finally {
     btn.textContent = 'Import Data';
     btn.disabled = false;
@@ -1594,7 +1594,7 @@ function showModelMetrics(data) {
 }
 
 document.getElementById('btn-train-model')?.addEventListener('click', async () => {
-  if (!globalData) { alert('Load data first — then train the model.'); return; }
+  if (!globalData) { showToast('Load data first — then train the model.', 'info'); return; }
   const btn = document.getElementById('btn-train-model');
   const status = document.getElementById('train-model-status');
   btn.textContent = 'Training...';
@@ -1670,10 +1670,10 @@ document.getElementById('btn-save-email-settings')?.addEventListener('click', as
 });
 
 document.getElementById('btn-send-test-report')?.addEventListener('click', async () => {
-  if (!globalData) { alert('Load dashboard data first.'); return; }
+  if (!globalData) { showToast('Load dashboard data first.', 'info'); return; }
   const raw = document.getElementById('email-recipients').value;
   const recipients = raw.split(',').map(s => s.trim()).filter(Boolean);
-  if (!recipients.length) { alert('Enter at least one recipient email.'); return; }
+  if (!recipients.length) { showToast('Enter at least one recipient email.', 'info'); return; }
   const btn = document.getElementById('btn-send-test-report');
   const status = document.getElementById('email-settings-status');
   btn.textContent = 'Sending...'; btn.disabled = true;
@@ -1696,7 +1696,7 @@ document.getElementById('btn-send-test-report')?.addEventListener('click', async
 });
 
 document.getElementById('btn-preview-email')?.addEventListener('click', async () => {
-  if (!globalData) { alert('Load dashboard data first.'); return; }
+  if (!globalData) { showToast('Load dashboard data first.', 'info'); return; }
   try {
     const res = await fetch('/api/preview-email', {
       method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(globalData)
@@ -1705,12 +1705,12 @@ document.getElementById('btn-preview-email')?.addEventListener('click', async ()
     const win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
-  } catch(e) { alert('Preview failed: ' + e.message); }
+  } catch(e) { showToast('Preview failed: ' + e.message, 'error'); }
 });
 
 // Email Alert
 document.getElementById('btn-email').addEventListener('click', () => {
-  if (!globalData) { alert('Load data first.'); return; }
+  if (!globalData) { showToast('Load data first — upload a CSV or click Sample Data.', 'info'); return; }
   document.getElementById('email-modal').style.display = 'flex';
   document.getElementById('email-input').value = '';
   document.getElementById('email-status').textContent = '';
@@ -1722,8 +1722,8 @@ document.getElementById('email-cancel').addEventListener('click', () => {
 
 document.getElementById('email-send').addEventListener('click', async () => {
   const email = document.getElementById('email-input').value.trim();
-  if (!email) { alert('Enter an email address'); return; }
-  if (!globalData) { alert('Load data first'); return; }
+  if (!email) { showToast('Enter an email address.', 'info'); return; }
+  if (!globalData) { showToast('Load data first — upload a CSV or click Sample Data.', 'info'); return; }
   
   const status = document.getElementById('email-status');
   const btn = document.getElementById('email-send');
@@ -1866,7 +1866,7 @@ document.getElementById('ai-input').addEventListener('keydown', e => { if (e.key
 
 // PDF Export
 document.getElementById('btn-export').addEventListener('click', async () => {
-  if (!globalData) { alert('Load data first.'); return; }
+  if (!globalData) { showToast('Load data first — upload a CSV or click Sample Data.', 'info'); return; }
   const btn = document.getElementById('btn-export');
   btn.textContent = 'Generating...';
   btn.disabled = true;
@@ -1876,7 +1876,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(globalData)
     });
-    if (!res.ok) { const e = await res.json(); alert('Error: ' + e.error); return; }
+    if (!res.ok) { const e = await res.json(); showToast('Export failed: ' + e.error, 'error'); return; }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1884,7 +1884,7 @@ document.getElementById('btn-export').addEventListener('click', async () => {
     a.download = 'PRG_Risk_Report.pdf';
     a.click();
     URL.revokeObjectURL(url);
-  } catch(e) { alert('Export failed: ' + e.message); }
+  } catch(e) { showToast('Export failed: ' + e.message, 'error'); }
   finally { btn.textContent = '↓ Export PDF'; btn.disabled = false; }
 });
 
