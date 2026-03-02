@@ -2092,6 +2092,19 @@ function renderGantt(data) {
     if (seen.has(j.job_id)) return false; seen.add(j.job_id); return true;
   });
 
+  // Synthesize dates from duration/delay fields when raw dates are absent
+  const _today = new Date();
+  merged.forEach(j => {
+    if (!j.start_date && (j.actual_duration_days != null || j.delay_days != null)) {
+      const durDays   = Math.max(1, parseFloat(j.actual_duration_days) || 0);
+      const delayDays = parseFloat(j.delay_days) || 0;
+      const plannedDur = Math.max(1, durDays - delayDays);
+      const start = new Date(_today.getTime() - durDays * 86400000);
+      j.start_date      = start.toISOString().split('T')[0];
+      j.planned_end_date = new Date(start.getTime() + plannedDur * 86400000).toISOString().split('T')[0];
+    }
+  });
+
   let jobs = merged.filter(j => parseD(j.start_date) && parseD(j.planned_end_date));
   if (ganttFilter !== 'ALL') jobs = jobs.filter(j => j.risk_level === ganttFilter);
   if (ganttSearch) jobs = jobs.filter(j =>
