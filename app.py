@@ -64,6 +64,13 @@ from scheduling import (
     dispatch_crew, get_dispatch_log,
     get_schedule_stats, get_weather,
 )
+from discussion import (
+    init_discussion_tables,
+    create_post, get_posts, get_post, delete_post, pin_post,
+    create_comment, get_comments, delete_comment,
+    toggle_reaction, get_discussion_stats,
+    subscribe, unsubscribe,
+)
 
 app = Flask(__name__, static_folder='static')
 # Use a stable secret key so sessions survive server restarts
@@ -83,6 +90,7 @@ seed_sample_crews()
 init_financial_tables()
 init_document_tables()
 init_schedule_tables()
+init_discussion_tables()
 
 LAST_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
 PREV_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'prev_session.json')
@@ -621,6 +629,147 @@ def weather_route():
     except Exception as e:
         logger.error(f"[weather] {e}")
         return jsonify({'error': f'Weather unavailable: {str(e)}'}), 502
+
+
+# ---------------------------------------------------------------------------
+# DISCUSSION ROUTES
+# ---------------------------------------------------------------------------
+
+@app.route('/api/discussion/posts', methods=['GET'])
+def list_posts():
+    job_id = request.args.get('job_id')
+    limit  = int(request.args.get('limit', 60))
+    offset = int(request.args.get('offset', 0))
+    try:
+        return jsonify(get_posts(job_id or None, limit, offset))
+    except Exception as e:
+        logger.error(f"[discussion GET] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/discussion/posts', methods=['POST'])
+def new_post():
+    data = request.get_json(silent=True) or {}
+    body = (data.get('body') or '').strip()
+    if not body:
+        return jsonify({'error': 'body is required'}), 400
+    try:
+        post = create_post(
+            author_name = (data.get('author_name') or 'Anonymous').strip(),
+            body        = body,
+            job_id      = data.get('job_id') or None,
+            title       = (data.get('title') or '').strip(),
+        )
+        return jsonify(post), 201
+    except Exception as e:
+        logger.error(f"[discussion POST] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/discussion/posts/<int:post_id>', methods=['GET'])
+def get_post_route(post_id):
+    post = get_post(post_id)
+    return (jsonify(post) if post else (jsonify({'error': 'Not found'}), 404))
+
+
+@app.route('/api/discussion/posts/<int:post_id>', methods=['DELETE'])
+def delete_post_route(post_id):
+    ok = delete_post(post_id)
+    return jsonify({'ok': ok})
+
+
+@app.route('/api/discussion/posts/<int:post_id>/pin', methods=['POST'])
+def pin_post_route(post_id):
+    data   = request.get_json(silent=True) or {}
+    pinned = data.get('pinned', True)
+    post   = pin_post(post_id, bool(pinned))
+    return jsonify(post) if post else (jsonify({'error': 'Not found'}), 404)
+
+
+@app.route('/api/discussion/posts/<int:post_id>/comments', methods=['GET'])
+def list_comments(post_id):
+    try:
+        return jsonify(get_comments(post_id))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/discussion/posts/<int:post_id>/comments', methods=['POST'])
+def new_comment(post_id):
+    data = request.get_json(silent=True) or {}
+    body = (data.get('body') or '').strip()
+    if not body:
+        return jsonify({'error': 'body is required'}), 400
+    try:
+        comment = create_comment(
+            post_id,
+            author_name = (data.get('author_name') or 'Anonymous').strip(),
+            body        = body,
+        )
+        return jsonify(comment), 201
+    except Exception as e:
+        logger.error(f"[comment POST] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/discussion/comments/<int:comment_id>', methods=['DELETE'])
+def delete_comment_route(comment_id):
+    ok = delete_comment(comment_id)
+    return jsonify({'ok': ok})
+
+
+@app.route('/api/discussion/posts/<int:post_id>/react', methods=['POST'])
+def react_to_post(post_id):
+    data        = request.get_json(silent=True) or {}
+    author_name = (data.get('author_name') or 'Anonymous').strip()
+    emoji       = (data.get('emoji') or '').strip()
+    if not emoji:
+        return jsonify({'error': 'emoji required'}), 400
+    try:
+        summary = toggle_reaction(post_id, author_name, emoji)
+        return jsonify(summary)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/discussion/stats', methods=['GET'])
+def discussion_stats():
+    try:
+        return jsonify(get_discussion_stats())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/discussion/stream')
+def discussion_stream():
+    """Server-Sent Events endpoint for real-time discussion updates."""
+    from flask import Response, stream_with_context
+    import queue as _queue
+
+    def generate():
+        q = subscribe()
+        try:
+            yield 'data: {"type":"connected"}\n\n'
+            while True:
+                try:
+                    msg = q.get(timeout=25)
+                    yield f'data: {msg}\n\n'
+                except _queue.Empty:
+                    yield ': heartbeat\n\n'
+        except GeneratorExit:
+            pass
+        finally:
+            unsubscribe(q)
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control':    'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection':       'keep-alive',
+        }
+    )
 
 
 @app.route('/api/upload', methods=['POST'])

@@ -88,6 +88,7 @@
     <div class="tab" data-tab="crews">Crews</div>
     <div class="tab" data-tab="financials">Financials</div>
     <div class="tab" data-tab="schedule">Schedule</div>
+    <div class="tab" data-tab="discussion" id="discussion-tab-btn">Discussion</div>
     <div class="tab" data-tab="settings">Settings</div>
     <div class="tab" data-tab="assistant">AI Assistant</div>
   </div>
@@ -590,6 +591,84 @@
             <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem">Unscheduled Active Jobs</div>
             <div id="unscheduled-list" style="max-height:260px;overflow-y:auto">
               <div style="color:var(--muted);font-family:var(--font-mono);font-size:.7rem;text-align:center;padding:1.5rem 0">Loading…</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- DISCUSSION TAB -->
+  <div class="tab-content" id="tab-discussion">
+    <div class="content">
+
+      <!-- Header -->
+      <div class="section-header" style="margin-bottom:1.25rem">
+        <div class="section-title">Discussion Board
+          <span id="disc-live-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-left:.6rem;vertical-align:middle" title="Connecting…"></span>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <span style="font-family:var(--font-mono);font-size:.68rem;color:var(--muted)">Posting as:</span>
+          <span id="disc-author-display" style="font-family:var(--font-mono);font-size:.72rem;color:var(--accent);font-weight:600">—</span>
+          <button onclick="changeDiscAuthor()" class="btn-secondary" style="font-size:.65rem;padding:.25rem .6rem">✏️ Change</button>
+        </div>
+      </div>
+
+      <!-- KPI row -->
+      <div id="disc-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.5rem"></div>
+
+      <!-- Two-column layout -->
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:1.25rem;align-items:start">
+
+        <!-- Left: Feed -->
+        <div>
+          <!-- Composer -->
+          <div class="card" style="padding:1.25rem;margin-bottom:1rem" id="disc-composer">
+            <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">New Post</div>
+            <textarea id="disc-post-body" rows="3" placeholder="Share an update, flag an issue, or ask the team…"
+              style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.78rem;box-sizing:border-box;outline:none;resize:vertical;margin-bottom:.6rem"></textarea>
+            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+              <select id="disc-post-job" style="flex:1;min-width:160px;padding:.4rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.72rem;outline:none">
+                <option value="">📋 No job tag</option>
+              </select>
+              <button onclick="submitPost()" class="btn-primary" style="padding:.4rem 1.1rem;font-size:.75rem">Post</button>
+            </div>
+          </div>
+
+          <!-- Feed -->
+          <div id="disc-feed">
+            <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted);text-align:center;padding:2rem">Loading feed…</div>
+          </div>
+          <button id="disc-load-more" onclick="loadMorePosts()" class="btn-secondary" style="width:100%;margin-top:.75rem;display:none;font-size:.7rem">Load more</button>
+        </div>
+
+        <!-- Right: Sidebar -->
+        <div style="display:flex;flex-direction:column;gap:1rem">
+
+          <!-- Filter -->
+          <div class="card" style="padding:1.25rem">
+            <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Filter by Job</div>
+            <select id="disc-filter-job" onchange="loadDiscFeed()" style="width:100%;padding:.45rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.72rem;outline:none">
+              <option value="">All posts</option>
+            </select>
+          </div>
+
+          <!-- Activity -->
+          <div class="card" style="padding:1.25rem">
+            <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem">Recent Activity</div>
+            <div id="disc-activity" style="font-family:var(--font-mono);font-size:.68rem;color:var(--muted)">No recent activity</div>
+          </div>
+
+          <!-- Reaction Legend -->
+          <div class="card" style="padding:1.25rem">
+            <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Reactions</div>
+            <div style="font-family:var(--font-mono);font-size:.7rem;display:grid;gap:.3rem">
+              <div>👍 <span style="color:var(--muted)">Acknowledged</span></div>
+              <div>✅ <span style="color:var(--muted)">Resolved</span></div>
+              <div>⚠️ <span style="color:var(--muted)">Needs attention</span></div>
+              <div>🔴 <span style="color:var(--muted)">Urgent</span></div>
             </div>
           </div>
 
@@ -3363,6 +3442,400 @@ function loadWeather() {
 document.getElementById('schedule-modal').addEventListener('click', function(e) {
   if (e.target === this) closeScheduleModal();
 });
+
+// =============================================================================
+// PHASE 5 — DISCUSSION BOARD
+// =============================================================================
+
+let _discAuthor   = localStorage.getItem('disc_author') || '';
+let _discOffset   = 0;
+const DISC_LIMIT  = 20;
+let _discJobFilter = '';
+let _discSSE      = null;
+let _discUnread   = 0;
+
+// ---------------------------------------------------------------------------
+// Tab init
+// ---------------------------------------------------------------------------
+
+document.querySelector('[data-tab="discussion"]').addEventListener('click', function() {
+  _discUnread = 0;
+  updateDiscBadge();
+  initDiscSSE();
+  loadDiscStats();
+  loadDiscFeed(true);
+  populateDiscJobDropdowns();
+  renderDiscAuthor();
+});
+
+function renderDiscAuthor() {
+  const el = document.getElementById('disc-author-display');
+  if (el) el.textContent = _discAuthor || '(not set)';
+}
+
+function changeDiscAuthor() {
+  const name = prompt('Enter your display name:', _discAuthor);
+  if (name && name.trim()) {
+    _discAuthor = name.trim();
+    localStorage.setItem('disc_author', _discAuthor);
+    renderDiscAuthor();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SSE Connection
+// ---------------------------------------------------------------------------
+
+function initDiscSSE() {
+  if (_discSSE) return;
+  _discSSE = new EventSource('/api/discussion/stream');
+  const dot = document.getElementById('disc-live-dot');
+
+  _discSSE.onopen = function() {
+    if (dot) { dot.style.background = 'var(--accent)'; dot.title = 'Live'; }
+  };
+  _discSSE.onmessage = function(e) {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.type === 'connected') return;
+      // If not on discussion tab, show unread badge
+      const tabEl = document.getElementById('tab-discussion');
+      const isVisible = tabEl && tabEl.style.display !== 'none';
+      if (!isVisible) {
+        _discUnread++;
+        updateDiscBadge();
+      } else {
+        // On tab — refresh feed silently
+        if (data.type === 'new_post')     { loadDiscFeed(true); loadDiscStats(); }
+        if (data.type === 'new_comment')  { refreshPostCard(data.post_id); }
+        if (data.type === 'reaction')     { refreshPostCard(data.post_id); }
+        if (data.type === 'delete_post')  { document.getElementById('disc-post-' + data.post_id)?.remove(); }
+      }
+    } catch(err) {}
+  };
+  _discSSE.onerror = function() {
+    if (dot) { dot.style.background = 'var(--amber)'; dot.title = 'Reconnecting…'; }
+    _discSSE.close();
+    _discSSE = null;
+    setTimeout(initDiscSSE, 5000);
+  };
+}
+
+function updateDiscBadge() {
+  const btn = document.getElementById('discussion-tab-btn');
+  if (!btn) return;
+  if (_discUnread > 0) {
+    btn.innerHTML = 'Discussion <span style="display:inline-block;background:var(--red);color:#fff;font-size:.55rem;border-radius:10px;padding:.05rem .35rem;vertical-align:middle;margin-left:.3rem">' + _discUnread + '</span>';
+  } else {
+    btn.textContent = 'Discussion';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Stats KPIs
+// ---------------------------------------------------------------------------
+
+async function loadDiscStats() {
+  try {
+    const d = await fetch('/api/discussion/stats').then(r => r.json());
+    const grid = document.getElementById('disc-kpi-grid');
+    if (!grid) return;
+    const cards = [
+      { label:'TOTAL POSTS',    value: d.total_posts,    color:'var(--text)',          sub:'all time' },
+      { label:'TOTAL COMMENTS', value: d.total_comments, color:'var(--accent-light)',  sub:'replies' },
+      { label:'PINNED',         value: d.pinned_posts,   color:'var(--accent)',        sub:'announcements' },
+      { label:'POSTED TODAY',   value: d.posts_today,    color:'var(--amber)',         sub:'new today' },
+    ];
+    grid.innerHTML = cards.map(c =>
+      '<div class="card" style="padding:1rem">' +
+        '<div style="font-family:var(--font-mono);font-size:.58rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem">' + c.label + '</div>' +
+        '<div style="font-size:1.8rem;font-weight:700;color:' + c.color + ';line-height:1">' + c.value + '</div>' +
+        '<div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);margin-top:.3rem">' + c.sub + '</div>' +
+      '</div>'
+    ).join('');
+  } catch(e) { console.error('[disc-stats]', e); }
+}
+
+// ---------------------------------------------------------------------------
+// Feed
+// ---------------------------------------------------------------------------
+
+async function loadDiscFeed(reset) {
+  if (reset) _discOffset = 0;
+  const jobFilter = document.getElementById('disc-filter-job')?.value || '';
+  _discJobFilter  = jobFilter;
+  const url = '/api/discussion/posts?limit=' + DISC_LIMIT + '&offset=' + _discOffset + (jobFilter ? '&job_id=' + encodeURIComponent(jobFilter) : '');
+  try {
+    const posts = await fetch(url).then(r => r.json());
+    const feed  = document.getElementById('disc-feed');
+    if (!feed) return;
+    if (reset) feed.innerHTML = '';
+    if (!posts.length && _discOffset === 0) {
+      feed.innerHTML = '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted);text-align:center;padding:3rem 0">No posts yet. Be the first to post!</div>';
+      document.getElementById('disc-load-more').style.display = 'none';
+      return;
+    }
+    posts.forEach(p => {
+      const existing = document.getElementById('disc-post-' + p.id);
+      if (existing) { existing.outerHTML = renderPostCard(p); }
+      else { feed.insertAdjacentHTML('beforeend', renderPostCard(p)); }
+    });
+    const moreBtn = document.getElementById('disc-load-more');
+    moreBtn.style.display = posts.length >= DISC_LIMIT ? 'block' : 'none';
+    _discOffset += posts.length;
+    updateActivityPanel(posts);
+  } catch(e) { console.error('[disc-feed]', e); }
+}
+
+function loadMorePosts() { loadDiscFeed(false); }
+
+function renderPostCard(p) {
+  const ago     = timeAgo(p.created_at);
+  const initials = (p.author_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const avatarColor = stringToColor(p.author_name || '?');
+  const jobBadge = p.job_id
+    ? '<span style="font-family:var(--font-mono);font-size:.6rem;padding:.15rem .45rem;background:rgba(34,197,94,.12);color:var(--accent);border-radius:3px;margin-left:.4rem">' + safeText(p.job_id) + '</span>' : '';
+  const pinBadge = p.pinned
+    ? '<span style="font-family:var(--font-mono);font-size:.6rem;padding:.12rem .4rem;background:rgba(245,158,11,.15);color:var(--amber);border-radius:3px;margin-left:.4rem">📌 PINNED</span>' : '';
+  const reactionBar = renderReactions(p.id, p.reactions || {});
+  return (
+    '<div id="disc-post-' + p.id + '" class="card" style="padding:1.1rem;margin-bottom:.75rem;border:1px solid ' + (p.pinned ? 'rgba(245,158,11,.35)' : 'var(--border)') + '">' +
+      '<div style="display:flex;gap:.75rem">' +
+        '<div style="width:34px;height:34px;border-radius:50%;background:' + avatarColor + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:.72rem;font-weight:700;color:#fff">' + initials + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.35rem">' +
+            '<span style="font-family:var(--font-mono);font-size:.75rem;font-weight:600;color:var(--text)">' + safeText(p.author_name) + '</span>' +
+            jobBadge + pinBadge +
+            '<span style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);margin-left:auto">' + ago + '</span>' +
+          '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:.78rem;color:var(--text);line-height:1.55;white-space:pre-wrap;word-break:break-word">' + safeText(p.body) + '</div>' +
+          '<div style="display:flex;align-items:center;gap:.5rem;margin-top:.65rem;flex-wrap:wrap">' +
+            reactionBar +
+            '<button onclick="toggleComments(' + p.id + ')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:var(--font-mono);font-size:.65rem;padding:.2rem .55rem;cursor:pointer">💬 ' + (p.comment_count||0) + '</button>' +
+            '<button onclick="pinToggle(' + p.id + ',' + (p.pinned?'false':'true') + ')" style="background:none;border:none;color:var(--muted);font-family:var(--font-mono);font-size:.65rem;cursor:pointer;padding:.2rem">' + (p.pinned ? '📌' : '📌') + '</button>' +
+            '<button onclick="deletePostUI(' + p.id + ')" style="background:none;border:none;color:var(--muted);font-family:var(--font-mono);font-size:.65rem;cursor:pointer;padding:.2rem .4rem;margin-left:auto">✕</button>' +
+          '</div>' +
+          '<div id="disc-comments-' + p.id + '" style="display:none;margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border)"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function renderReactions(postId, reactions) {
+  const EMOJIS = ['👍','✅','⚠️','🔴'];
+  return EMOJIS.map(e =>
+    '<button onclick="reactToPost(' + postId + ',\'' + e + '\')" style="background:' + ((reactions[e]||0)>0?'rgba(34,197,94,.1)':'none') + ';border:1px solid ' + ((reactions[e]||0)>0?'var(--accent)':'var(--border)') + ';border-radius:4px;padding:.2rem .45rem;cursor:pointer;font-size:.75rem;font-family:var(--font-mono)">' +
+      e + ((reactions[e]||0)>0 ? ' <span style="font-size:.6rem;color:var(--accent)">' + reactions[e] + '</span>' : '') +
+    '</button>'
+  ).join('');
+}
+
+async function refreshPostCard(postId) {
+  try {
+    const p = await fetch('/api/discussion/posts/' + postId).then(r => r.json());
+    const el = document.getElementById('disc-post-' + postId);
+    if (el) el.outerHTML = renderPostCard(p);
+  } catch(e) {}
+}
+
+// ---------------------------------------------------------------------------
+// Post Actions
+// ---------------------------------------------------------------------------
+
+async function submitPost() {
+  if (!_discAuthor) {
+    const name = prompt('Enter your display name to post:');
+    if (!name || !name.trim()) return;
+    _discAuthor = name.trim();
+    localStorage.setItem('disc_author', _discAuthor);
+    renderDiscAuthor();
+  }
+  const body = (document.getElementById('disc-post-body')?.value || '').trim();
+  if (!body) { alert('Write something first!'); return; }
+  const jobId = document.getElementById('disc-post-job')?.value || '';
+  try {
+    await fetch('/api/discussion/posts', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ author_name: _discAuthor, body, job_id: jobId || null }),
+    });
+    document.getElementById('disc-post-body').value = '';
+    loadDiscFeed(true);
+    loadDiscStats();
+  } catch(e) { alert('Post failed: ' + e.message); }
+}
+
+async function deletePostUI(postId) {
+  if (!confirm('Delete this post and all its comments?')) return;
+  await fetch('/api/discussion/posts/' + postId, { method: 'DELETE' });
+  document.getElementById('disc-post-' + postId)?.remove();
+  loadDiscStats();
+}
+
+async function pinToggle(postId, pinned) {
+  await fetch('/api/discussion/posts/' + postId + '/pin', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ pinned }),
+  });
+  loadDiscFeed(true);
+}
+
+async function reactToPost(postId, emoji) {
+  if (!_discAuthor) { changeDiscAuthor(); return; }
+  try {
+    const reactions = await fetch('/api/discussion/posts/' + postId + '/react', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ author_name: _discAuthor, emoji }),
+    }).then(r => r.json());
+    // Update reaction bar in-place
+    const card = document.getElementById('disc-post-' + postId);
+    if (card) {
+      const bar = card.querySelector('.disc-reaction-bar');
+      if (bar) bar.innerHTML = renderReactions(postId, reactions);
+    }
+  } catch(e) {}
+}
+
+// ---------------------------------------------------------------------------
+// Comments
+// ---------------------------------------------------------------------------
+
+async function toggleComments(postId) {
+  const el = document.getElementById('disc-comments-' + postId);
+  if (!el) return;
+  if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)">Loading…</div>';
+  await renderComments(postId);
+}
+
+async function renderComments(postId) {
+  const el = document.getElementById('disc-comments-' + postId);
+  if (!el || el.style.display === 'none') return;
+  try {
+    const comments = await fetch('/api/discussion/posts/' + postId + '/comments').then(r => r.json());
+    el.innerHTML =
+      (comments.length ? comments.map(c => {
+        const initials = (c.author_name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+        return (
+          '<div style="display:flex;gap:.6rem;margin-bottom:.6rem;align-items:flex-start">' +
+            '<div style="width:26px;height:26px;border-radius:50%;background:' + stringToColor(c.author_name) + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:.6rem;font-weight:700;color:#fff">' + initials + '</div>' +
+            '<div style="flex:1;background:var(--bg);border-radius:6px;padding:.5rem .75rem">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem">' +
+                '<span style="font-family:var(--font-mono);font-size:.68rem;font-weight:600;color:var(--text)">' + safeText(c.author_name) + '</span>' +
+                '<div style="display:flex;align-items:center;gap:.4rem">' +
+                  '<span style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted)">' + timeAgo(c.created_at) + '</span>' +
+                  '<button onclick="deleteCommentUI(' + c.id + ',' + postId + ')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.65rem;padding:.1rem .25rem">✕</button>' +
+                '</div>' +
+              '</div>' +
+              '<div style="font-family:var(--font-mono);font-size:.74rem;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word">' + safeText(c.body) + '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('') : '<div style="font-family:var(--font-mono);font-size:.68rem;color:var(--muted);padding:.25rem 0 .5rem">No comments yet.</div>') +
+      '<div style="display:flex;gap:.5rem;margin-top:.6rem">' +
+        '<input id="disc-comment-input-' + postId + '" type="text" placeholder="Add a comment…"' +
+          ' style="flex:1;padding:.4rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.74rem;outline:none"' +
+          ' onkeydown="if(event.key===\'Enter\')submitComment(' + postId + ')">' +
+        '<button onclick="submitComment(' + postId + ')" class="btn-secondary" style="font-size:.7rem;padding:.4rem .75rem">Send</button>' +
+      '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);font-family:var(--font-mono);font-size:.7rem">Failed to load comments.</div>';
+  }
+}
+
+async function submitComment(postId) {
+  if (!_discAuthor) { changeDiscAuthor(); return; }
+  const input = document.getElementById('disc-comment-input-' + postId);
+  const body  = (input?.value || '').trim();
+  if (!body) return;
+  try {
+    await fetch('/api/discussion/posts/' + postId + '/comments', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ author_name: _discAuthor, body }),
+    });
+    input.value = '';
+    await renderComments(postId);
+    // Update comment count on card
+    const card = document.getElementById('disc-post-' + postId);
+    if (card) {
+      const btn = [...card.querySelectorAll('button')].find(b => b.textContent.startsWith('💬'));
+      if (btn) {
+        const count = (parseInt(btn.textContent.replace('💬',''))||0) + 1;
+        btn.textContent = '💬 ' + count;
+      }
+    }
+    loadDiscStats();
+  } catch(e) { alert('Comment failed: ' + e.message); }
+}
+
+async function deleteCommentUI(commentId, postId) {
+  if (!confirm('Delete this comment?')) return;
+  await fetch('/api/discussion/comments/' + commentId, { method: 'DELETE' });
+  await renderComments(postId);
+  loadDiscStats();
+}
+
+// ---------------------------------------------------------------------------
+// Job Dropdowns
+// ---------------------------------------------------------------------------
+
+async function populateDiscJobDropdowns() {
+  try {
+    const resp = await fetch('/api/last-session');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const jobs = (data.scored_jobs || []).filter(j => ['In Progress','Open'].includes(j.status));
+    const opts = '<option value="">— No job tag —</option>' +
+      jobs.slice(0,40).map(j => '<option value="' + safeText(j.job_id) + '">' + safeText(j.job_id) + ' · ' + safeText(j.contractor||'') + '</option>').join('');
+    const filterOpts = '<option value="">All posts</option>' +
+      jobs.slice(0,40).map(j => '<option value="' + safeText(j.job_id) + '">' + safeText(j.job_id) + '</option>').join('');
+    const postSel   = document.getElementById('disc-post-job');
+    const filterSel = document.getElementById('disc-filter-job');
+    if (postSel)   postSel.innerHTML   = opts;
+    if (filterSel) filterSel.innerHTML = filterOpts;
+  } catch(e) {}
+}
+
+// ---------------------------------------------------------------------------
+// Activity Panel
+// ---------------------------------------------------------------------------
+
+function updateActivityPanel(posts) {
+  const el = document.getElementById('disc-activity');
+  if (!el || !posts.length) return;
+  el.innerHTML = posts.slice(0,6).map(p =>
+    '<div style="margin-bottom:.5rem;padding:.4rem .5rem;background:var(--bg);border-radius:4px">' +
+      '<div style="font-weight:600;color:var(--text)">' + safeText(p.author_name) + '</div>' +
+      '<div style="color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + safeText((p.body||'').slice(0,45)) + '…</div>' +
+      '<div style="color:var(--muted);font-size:.6rem;margin-top:.15rem">' + timeAgo(p.created_at) + '</div>' +
+    '</div>'
+  ).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = (Date.now() - new Date(ts + (ts.includes('Z')?'':'Z')).getTime()) / 1000;
+  if (diff < 60)   return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+function stringToColor(str) {
+  let hash = 0;
+  for (let i = 0; i < (str||'').length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return 'hsl(' + hue + ',45%,38%)';
+}
 </script>
 </body>
 </html>
