@@ -730,7 +730,7 @@
       </div>
 
       <!-- Save schedule button -->
-      <button onclick="submitSchedule()" class="btn-primary" style="width:100%;margin-bottom:1.25rem">💾 Save Schedule</button>
+      <button onclick="submitSchedule(this)" class="btn-primary" style="width:100%;margin-bottom:1.25rem">💾 Save Schedule</button>
 
       <hr style="border:none;border-top:1px solid var(--border);margin-bottom:1.25rem">
 
@@ -760,7 +760,7 @@
       <div style="margin-bottom:1.25rem">
         <textarea id="dispatch-notes" rows="2" placeholder="Dispatch notes…" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.78rem;box-sizing:border-box;outline:none;resize:vertical"></textarea>
       </div>
-      <button onclick="submitDispatch()" class="btn-primary" style="width:100%;background:var(--accent);border-color:var(--accent);color:var(--bg)">🚚 Dispatch Crew</button>
+      <button onclick="submitDispatch(this)" class="btn-primary" style="width:100%;background:var(--accent);border-color:var(--accent);color:var(--bg)">🚚 Dispatch Crew</button>
 
       <!-- Dispatch history -->
       <div id="dispatch-history" style="margin-top:1.25rem"></div>
@@ -3216,7 +3216,7 @@ function closeScheduleModal() {
   loadTodayDispatch();
 }
 
-async function submitSchedule() {
+async function submitSchedule(btn) {
   const jobId = document.getElementById('sched-modal-job-id').value.trim();
   if (!jobId) { alert('Enter a Job ID first'); return; }
   const payload = {
@@ -3230,7 +3230,6 @@ async function submitSchedule() {
     await fetch('/api/schedule/' + jobId, {
       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
     });
-    const btn = event.target;
     const orig = btn.textContent;
     btn.textContent = '✓ Saved';
     setTimeout(() => { btn.textContent = orig; }, 1500);
@@ -3294,7 +3293,7 @@ async function loadAllCrewsForDispatch() {
   } catch(e) {}
 }
 
-async function submitDispatch() {
+async function submitDispatch(btn) {
   const jobId  = document.getElementById('sched-modal-job-id').value.trim();
   const crewId = document.getElementById('dispatch-crew-select').value;
   if (!jobId)  { alert('No job selected');    return; }
@@ -3310,7 +3309,6 @@ async function submitDispatch() {
       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
     });
     if (!res.ok) throw new Error((await res.json()).error);
-    const btn = event.target;
     btn.textContent = '✓ Dispatched!';
     btn.style.background = 'var(--green)';
     setTimeout(() => { btn.textContent = '🚚 Dispatch Crew'; btn.style.background = ''; }, 2000);
