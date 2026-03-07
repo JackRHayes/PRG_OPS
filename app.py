@@ -57,6 +57,13 @@ from document_manager import (
     save_document, get_job_documents, get_document,
     delete_document, update_document, CATEGORIES,
 )
+from scheduling import (
+    init_schedule_tables,
+    schedule_job, get_job_schedule, get_schedule, delete_job_schedule,
+    auto_assign_crew,
+    dispatch_crew, get_dispatch_log,
+    get_schedule_stats, get_weather,
+)
 
 app = Flask(__name__, static_folder='static')
 # Use a stable secret key so sessions survive server restarts
@@ -75,6 +82,7 @@ init_crew_tables()
 seed_sample_crews()
 init_financial_tables()
 init_document_tables()
+init_schedule_tables()
 
 LAST_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
 PREV_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'prev_session.json')
@@ -514,6 +522,105 @@ def remove_document(doc_id):
 @app.route('/api/documents/categories', methods=['GET'])
 def document_categories():
     return jsonify(CATEGORIES)
+
+
+# ---------------------------------------------------------------------------
+# SCHEDULE ROUTES
+# ---------------------------------------------------------------------------
+
+@app.route('/api/schedule', methods=['GET'])
+def list_schedule():
+    start = request.args.get('start')
+    end   = request.args.get('end')
+    try:
+        return jsonify(get_schedule(start, end))
+    except Exception as e:
+        logger.error(f"[schedule GET] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/schedule/stats', methods=['GET'])
+def schedule_stats():
+    try:
+        return jsonify(get_schedule_stats())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/schedule/<job_id>', methods=['GET'])
+def get_schedule_route(job_id):
+    entry = get_job_schedule(job_id)
+    if not entry:
+        return jsonify({'error': 'Not scheduled'}), 404
+    return jsonify(entry)
+
+
+@app.route('/api/schedule/<job_id>', methods=['POST'])
+def set_schedule(job_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        entry = schedule_job(job_id, data)
+        return jsonify(entry), 201
+    except Exception as e:
+        logger.error(f"[schedule POST] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/schedule/<job_id>', methods=['DELETE'])
+def remove_schedule(job_id):
+    ok = delete_job_schedule(job_id)
+    return jsonify({'ok': ok})
+
+
+@app.route('/api/schedule/<job_id>/auto-assign', methods=['GET'])
+def schedule_auto_assign(job_id):
+    try:
+        matches = auto_assign_crew(job_id)
+        return jsonify(matches)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/dispatch', methods=['POST'])
+def post_dispatch():
+    data    = request.get_json(silent=True) or {}
+    job_id  = data.get('job_id', '').strip()
+    crew_id = data.get('crew_id')
+    if not job_id or not crew_id:
+        return jsonify({'error': 'job_id and crew_id required'}), 400
+    try:
+        log = dispatch_crew(job_id, int(crew_id),
+                            eta=data.get('eta', ''),
+                            notes=data.get('notes', ''))
+        return jsonify(log), 201
+    except Exception as e:
+        logger.error(f"[dispatch POST] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/jobs/<job_id>/dispatch', methods=['GET'])
+def job_dispatch_log(job_id):
+    try:
+        return jsonify(get_dispatch_log(job_id))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/weather', methods=['GET'])
+def weather_route():
+    lat     = request.args.get('lat')
+    lng     = request.args.get('lng')
+    api_key = request.args.get('api_key') or os.environ.get('OPENWEATHER_KEY', '')
+    if not lat or not lng:
+        return jsonify({'error': 'lat and lng are required'}), 400
+    if not api_key:
+        return jsonify({'error': 'No OpenWeather API key. Set OPENWEATHER_KEY env var.'}), 400
+    try:
+        data = get_weather(float(lat), float(lng), api_key)
+        return jsonify(data)
+    except Exception as e:
+        logger.error(f"[weather] {e}")
+        return jsonify({'error': f'Weather unavailable: {str(e)}'}), 502
 
 
 @app.route('/api/upload', methods=['POST'])

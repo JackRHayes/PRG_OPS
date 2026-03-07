@@ -8,9 +8,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/static/style.css">
+<style>
+/* FullCalendar dark theme */
+.fc { color: var(--text); font-family: var(--font-mono); font-size: .76rem; }
+.fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
+.fc-theme-standard .fc-scrollgrid { border-color: var(--border) !important; }
+.fc-col-header-cell { background: var(--surface) !important; }
+.fc-daygrid-day { background: var(--bg) !important; }
+.fc-daygrid-day.fc-day-today { background: rgba(34,197,94,.08) !important; }
+.fc-button-primary { background: var(--surface) !important; border-color: var(--border) !important; color: var(--text) !important; font-family: var(--font-mono) !important; font-size: .65rem !important; text-transform: uppercase; letter-spacing: .05em; }
+.fc-button-primary:hover { background: var(--border) !important; }
+.fc-button-primary.fc-button-active, .fc-button-primary:not(:disabled).fc-button-active { background: var(--accent) !important; color: var(--bg) !important; border-color: var(--accent) !important; }
+.fc-toolbar-title { font-family: var(--font-mono) !important; font-size: .88rem !important; font-weight: 600; color: var(--text); }
+.fc-event { border-radius: 4px !important; border: none !important; font-size: .68rem; padding: 1px 5px; cursor: pointer; }
+.fc-popover { background: var(--surface) !important; border-color: var(--border) !important; color: var(--text); }
+.fc-popover-title { background: var(--bg) !important; color: var(--text); font-family: var(--font-mono); font-size: .7rem; }
+.fc-list-day-cushion { background: var(--surface) !important; }
+.fc-list-event:hover td { background: var(--border) !important; }
+.fc-day-other .fc-daygrid-day-number { color: var(--muted) !important; }
+</style>
 </head>
 <body>
 
@@ -67,6 +87,7 @@
     <div class="tab" data-tab="timeline">Timeline</div>
     <div class="tab" data-tab="crews">Crews</div>
     <div class="tab" data-tab="financials">Financials</div>
+    <div class="tab" data-tab="schedule">Schedule</div>
     <div class="tab" data-tab="settings">Settings</div>
     <div class="tab" data-tab="assistant">AI Assistant</div>
   </div>
@@ -523,6 +544,149 @@
     </div>
   </div>
 
+  <!-- SCHEDULE TAB -->
+  <div class="tab-content" id="tab-schedule">
+    <div class="content">
+      <div class="section-header" style="margin-bottom:1.25rem">
+        <div class="section-title">Scheduling &amp; Dispatch</div>
+        <button class="btn-secondary" onclick="loadScheduleTab()" style="font-size:.7rem;padding:.3rem .75rem">↺ Refresh</button>
+      </div>
+
+      <!-- KPI cards -->
+      <div id="sched-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.5rem"></div>
+
+      <!-- Two-column layout: Calendar | Sidebar -->
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:1.25rem;align-items:start">
+
+        <!-- Calendar -->
+        <div class="card" style="padding:1.25rem">
+          <div id="schedule-calendar"></div>
+        </div>
+
+        <!-- Sidebar -->
+        <div style="display:flex;flex-direction:column;gap:1rem">
+
+          <!-- Weather Widget -->
+          <div class="card" style="padding:1.25rem">
+            <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem;display:flex;justify-content:space-between;align-items:center">
+              <span>Site Weather</span>
+              <button onclick="loadWeather(true)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:0" title="Refresh weather">↺</button>
+            </div>
+            <div id="weather-widget">
+              <button onclick="loadWeather(true)" class="btn-secondary" style="width:100%;font-size:.7rem;padding:.45rem .75rem">📍 Get Local Weather</button>
+            </div>
+          </div>
+
+          <!-- Today's Dispatch Queue -->
+          <div class="card" style="padding:1.25rem">
+            <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem">Today's Dispatch</div>
+            <div id="dispatch-queue">
+              <div style="color:var(--muted);font-family:var(--font-mono);font-size:.7rem;text-align:center;padding:1.5rem 0">No jobs dispatched today</div>
+            </div>
+          </div>
+
+          <!-- Unscheduled Jobs -->
+          <div class="card" style="padding:1.25rem">
+            <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem">Unscheduled Active Jobs</div>
+            <div id="unscheduled-list" style="max-height:260px;overflow-y:auto">
+              <div style="color:var(--muted);font-family:var(--font-mono);font-size:.7rem;text-align:center;padding:1.5rem 0">Loading…</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SCHEDULE / DISPATCH MODAL -->
+<div id="schedule-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1002;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1">
+      <div id="sched-modal-title" style="font-family:var(--font-mono);font-size:.75rem;font-weight:700;color:var(--text)">Schedule Job</div>
+      <button onclick="closeScheduleModal()" style="background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:.2rem .4rem">✕</button>
+    </div>
+    <div style="padding:1.5rem">
+      <input type="hidden" id="sched-modal-job-id">
+
+      <!-- Job info row -->
+      <div id="sched-job-info" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;margin-bottom:1.25rem;font-family:var(--font-mono);font-size:.72rem;color:var(--muted)"></div>
+
+      <!-- Dates -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div>
+          <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">SCHEDULED START</label>
+          <input id="sched-start" type="date" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none;color-scheme:dark">
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">SCHEDULED END</label>
+          <input id="sched-end" type="date" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none;color-scheme:dark">
+        </div>
+      </div>
+
+      <!-- Priority + Weather Hold -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div>
+          <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">PRIORITY</label>
+          <select id="sched-priority" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none">
+            <option>Normal</option>
+            <option>High</option>
+            <option>Urgent</option>
+            <option>Low</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;justify-content:flex-end">
+          <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:.5rem 0">
+            <input type="checkbox" id="sched-weather-hold" style="accent-color:var(--amber)">
+            <span>⚠️ Weather Hold</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div style="margin-bottom:1.25rem">
+        <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">NOTES</label>
+        <textarea id="sched-notes" rows="2" placeholder="Scheduling notes…" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.78rem;box-sizing:border-box;outline:none;resize:vertical"></textarea>
+      </div>
+
+      <!-- Save schedule button -->
+      <button onclick="submitSchedule()" class="btn-primary" style="width:100%;margin-bottom:1.25rem">💾 Save Schedule</button>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin-bottom:1.25rem">
+
+      <!-- Crew Dispatch section -->
+      <div style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem">Dispatch Crew</div>
+
+      <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+        <button onclick="runAutoAssign()" class="btn-secondary" style="font-size:.72rem;flex:1">⚡ Auto-Assign</button>
+        <button onclick="loadAllCrewsForDispatch()" class="btn-secondary" style="font-size:.72rem;flex:1">👷 Manual Select</button>
+      </div>
+
+      <!-- Auto-assign results -->
+      <div id="auto-assign-results" style="display:none;margin-bottom:.75rem"></div>
+
+      <!-- Manual crew select -->
+      <div id="manual-crew-section" style="display:none;margin-bottom:.75rem">
+        <select id="dispatch-crew-select" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.78rem;box-sizing:border-box;outline:none;margin-bottom:.5rem">
+          <option value="">— Select crew member —</option>
+        </select>
+      </div>
+
+      <!-- ETA -->
+      <div style="margin-bottom:.75rem">
+        <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">ETA / DISPATCH TIME</label>
+        <input id="dispatch-eta" type="datetime-local" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.78rem;box-sizing:border-box;outline:none;color-scheme:dark">
+      </div>
+      <div style="margin-bottom:1.25rem">
+        <textarea id="dispatch-notes" rows="2" placeholder="Dispatch notes…" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.78rem;box-sizing:border-box;outline:none;resize:vertical"></textarea>
+      </div>
+      <button onclick="submitDispatch()" class="btn-primary" style="width:100%;background:var(--accent);border-color:var(--accent);color:var(--bg)">🚚 Dispatch Crew</button>
+
+      <!-- Dispatch history -->
+      <div id="dispatch-history" style="margin-top:1.25rem"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ADD / EDIT CREW MODAL -->
@@ -1240,6 +1404,7 @@ function showJobModal(job) {
     <button onclick="openAssignCrewModal('${job.job_id}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">👷 Assign Crew</button>
     <button onclick="openJobFinancials('${job.job_id}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">💰 Financials</button>
     <button onclick="openJobDocuments('${job.job_id}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">📄 Documents</button>
+    <button onclick="openScheduleModal('${job.job_id}','${(job.contractor||'').replace(/'/g,'')}','${(job.scope_type||'').replace(/'/g,'')}','${(job.region||'').replace(/'/g,'')}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">📅 Schedule</button>
   </div>`;
 
   // Financials panel (lazy loaded)
@@ -2830,6 +2995,374 @@ async function deleteDoc(docId, jobId) {
   await fetch(`/api/documents/${docId}`,{method:'DELETE'});
   await renderJobDocuments(jobId);
 }
+
+// =============================================================================
+// PHASE 4 — SCHEDULING & DISPATCH
+// =============================================================================
+
+let _schedCalendar = null;
+
+// Tab click handler
+document.querySelector('[data-tab="schedule"]').addEventListener('click', loadScheduleTab);
+
+async function loadScheduleTab() {
+  await loadSchedStats();
+  await loadTodayDispatch();
+  await loadUnscheduledJobs();
+  setTimeout(initScheduleCalendar, 80);
+}
+
+// ---------------------------------------------------------------------------
+// KPI Cards
+// ---------------------------------------------------------------------------
+
+async function loadSchedStats() {
+  try {
+    const d = await fetch('/api/schedule/stats').then(r => r.json());
+    const grid = document.getElementById('sched-kpi-grid');
+    if (!grid) return;
+    const cards = [
+      { label:'SCHEDULED THIS WEEK', value: d.scheduled_this_week, color:'var(--accent)',       sub:'on the calendar' },
+      { label:'DISPATCHED TODAY',     value: d.dispatched_today,    color:'var(--accent-light)', sub:'crews sent out' },
+      { label:'WEATHER HOLDS',        value: d.weather_holds,       color:'var(--amber)',         sub:'jobs paused' },
+      { label:'TOTAL SCHEDULED',      value: d.total_scheduled,     color:'var(--text)',          sub:'all time' },
+    ];
+    grid.innerHTML = cards.map(c => `
+      <div class="card" style="padding:1rem">
+        <div style="font-family:var(--font-mono);font-size:.58rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem">${c.label}</div>
+        <div style="font-size:1.8rem;font-weight:700;color:${c.color};line-height:1">${c.value}</div>
+        <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);margin-top:.3rem">${c.sub}</div>
+      </div>`).join('');
+  } catch(e) { console.error('[sched-stats]', e); }
+}
+
+// ---------------------------------------------------------------------------
+// FullCalendar Init
+// ---------------------------------------------------------------------------
+
+function initScheduleCalendar() {
+  const el = document.getElementById('schedule-calendar');
+  if (!el || typeof FullCalendar === 'undefined') return;
+  if (_schedCalendar) { _schedCalendar.refetchEvents(); return; }
+
+  _schedCalendar = new FullCalendar.Calendar(el, {
+    initialView: 'dayGridMonth',
+    headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,timeGridWeek,listWeek' },
+    height: 'auto',
+    eventSources: [{
+      url: '/api/schedule',
+      success: function(raw) {
+        return raw.map(s => ({
+          id:    s.job_id,
+          title: s.job_id + ' · ' + (s.contractor || ''),
+          start: s.scheduled_start,
+          end:   s.scheduled_end,
+          color: s.weather_hold     ? '#f59e0b'
+               : s.priority === 'Urgent' ? '#ef4444'
+               : s.priority === 'High'   ? '#f97316'
+               : '#22c55e',
+          extendedProps: s,
+        }));
+      },
+    }],
+    eventClick: function(info) {
+      const p = info.event.extendedProps;
+      openScheduleModal(p.job_id, p.contractor || '', p.scope_type || '', p.region || '');
+    },
+    dateClick: function(info) {
+      openScheduleModal('', '', '', '', info.dateStr);
+    },
+    eventDidMount: function(info) {
+      if (info.event.extendedProps.weather_hold) info.el.title = '⚠️ Weather Hold';
+    },
+  });
+  _schedCalendar.render();
+}
+
+// ---------------------------------------------------------------------------
+// Schedule Modal
+// ---------------------------------------------------------------------------
+
+async function openScheduleModal(jobId, contractor, scope, region, prefillDate) {
+  document.getElementById('sched-modal-job-id').value   = jobId || '';
+  document.getElementById('sched-modal-title').textContent = jobId ? 'Schedule — ' + jobId : 'Schedule Job';
+  document.getElementById('sched-job-info').innerHTML   = jobId
+    ? '<b>' + jobId + '</b> · ' + (contractor || '—') + ' · <span style="color:var(--muted)">' + (scope || '—') + '</span> · ' + (region || '—')
+    : '<span style="color:var(--muted)">Select a job from the Job Risk Table</span>';
+  document.getElementById('sched-start').value          = prefillDate || '';
+  document.getElementById('sched-end').value            = '';
+  document.getElementById('sched-priority').value       = 'Normal';
+  document.getElementById('sched-weather-hold').checked = false;
+  document.getElementById('sched-notes').value          = '';
+  document.getElementById('auto-assign-results').style.display  = 'none';
+  document.getElementById('manual-crew-section').style.display  = 'none';
+  document.getElementById('dispatch-eta').value         = '';
+  document.getElementById('dispatch-notes').value       = '';
+  document.getElementById('dispatch-history').innerHTML = '';
+
+  if (jobId) {
+    try {
+      const existing = await fetch('/api/schedule/' + jobId).then(r => r.status === 200 ? r.json() : null);
+      if (existing) {
+        document.getElementById('sched-start').value          = existing.scheduled_start || '';
+        document.getElementById('sched-end').value            = existing.scheduled_end   || '';
+        document.getElementById('sched-priority').value       = existing.priority        || 'Normal';
+        document.getElementById('sched-weather-hold').checked = !!existing.weather_hold;
+        document.getElementById('sched-notes').value          = existing.notes           || '';
+      }
+    } catch(e) {}
+    try {
+      const logs = await fetch('/api/jobs/' + jobId + '/dispatch').then(r => r.json());
+      if (logs.length) {
+        document.getElementById('dispatch-history').innerHTML =
+          '<div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">Dispatch History</div>' +
+          logs.map(l =>
+            '<div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem .5rem;background:var(--bg);border-radius:5px;margin-bottom:.3rem">' +
+              '<div><span style="font-family:var(--font-mono);font-size:.72rem;color:var(--text)">' + l.crew_name + '</span>' +
+              '<span style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);margin-left:.5rem">' + (l.dispatched_at||'').split('T')[0] + '</span></div>' +
+              '<span style="font-family:var(--font-mono);font-size:.62rem;padding:.15rem .45rem;background:rgba(34,197,94,.12);color:var(--accent);border-radius:3px">' + l.status + '</span>' +
+            '</div>'
+          ).join('');
+      }
+    } catch(e) {}
+  }
+
+  document.getElementById('schedule-modal').style.display = 'flex';
+}
+
+function closeScheduleModal() {
+  document.getElementById('schedule-modal').style.display = 'none';
+  if (_schedCalendar) _schedCalendar.refetchEvents();
+  loadSchedStats();
+  loadTodayDispatch();
+}
+
+async function submitSchedule() {
+  const jobId = document.getElementById('sched-modal-job-id').value.trim();
+  if (!jobId) { alert('Enter a Job ID first'); return; }
+  const payload = {
+    scheduled_start: document.getElementById('sched-start').value,
+    scheduled_end:   document.getElementById('sched-end').value,
+    priority:        document.getElementById('sched-priority').value,
+    weather_hold:    document.getElementById('sched-weather-hold').checked,
+    notes:           document.getElementById('sched-notes').value.trim(),
+  };
+  try {
+    await fetch('/api/schedule/' + jobId, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
+    });
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Saved';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+    if (_schedCalendar) _schedCalendar.refetchEvents();
+  } catch(e) { alert('Save failed: ' + e.message); }
+}
+
+// ---------------------------------------------------------------------------
+// Auto-Assign
+// ---------------------------------------------------------------------------
+
+async function runAutoAssign() {
+  const jobId = document.getElementById('sched-modal-job-id').value.trim();
+  if (!jobId) { alert('No job selected'); return; }
+  const el = document.getElementById('auto-assign-results');
+  el.style.display = 'block';
+  el.innerHTML = '<span style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)">Analysing crew availability…</span>';
+  try {
+    const matches = await fetch('/api/schedule/' + jobId + '/auto-assign').then(r => r.json());
+    if (!matches.length) {
+      el.innerHTML = '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--amber)">No available crews found</div>';
+      return;
+    }
+    el.innerHTML =
+      '<div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">Best Matches</div>' +
+      matches.map((c, i) =>
+        '<div onclick="selectCrewForDispatch(' + c.id + ',\'' + c.name.replace(/'/g,'') + '\')"' +
+          ' style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .75rem;background:var(--bg);border-radius:6px;border:1px solid var(--border);margin-bottom:.4rem;cursor:pointer">' +
+          '<div>' +
+            '<span style="font-family:var(--font-mono);font-size:.72rem;color:var(--text);font-weight:600">' + (i===0?'⭐ ':'') + c.name + '</span>' +
+            '<span style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);margin-left:.5rem">' + (c.skills||'—') + '</span>' +
+          '</div>' +
+          '<div style="text-align:right">' +
+            '<div style="font-family:var(--font-mono);font-size:.65rem;color:var(--accent)">' + c.skill_match + ' skill match</div>' +
+            '<div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted)">' + (c.week_hours||0) + 'h this week</div>' +
+          '</div>' +
+        '</div>'
+      ).join('') +
+      '<div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-top:.35rem">Click a match to select for dispatch</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);font-family:var(--font-mono);font-size:.72rem">Error: ' + e.message + '</div>';
+  }
+}
+
+function selectCrewForDispatch(crewId, crewName) {
+  const sec = document.getElementById('manual-crew-section');
+  sec.style.display = 'block';
+  let sel = document.getElementById('dispatch-crew-select');
+  let opt = [...sel.options].find(o => o.value == crewId);
+  if (!opt) { opt = new Option(crewName, crewId); sel.add(opt); }
+  sel.value = crewId;
+}
+
+async function loadAllCrewsForDispatch() {
+  document.getElementById('manual-crew-section').style.display = 'block';
+  try {
+    const crews = await fetch('/api/crews').then(r => r.json());
+    const sel = document.getElementById('dispatch-crew-select');
+    sel.innerHTML = '<option value="">— Select crew member —</option>';
+    crews.forEach(c => sel.add(new Option(c.name + ' (' + c.status + ') — ' + (c.skills||'—'), c.id)));
+  } catch(e) {}
+}
+
+async function submitDispatch() {
+  const jobId  = document.getElementById('sched-modal-job-id').value.trim();
+  const crewId = document.getElementById('dispatch-crew-select').value;
+  if (!jobId)  { alert('No job selected');    return; }
+  if (!crewId) { alert('Select a crew member'); return; }
+  const payload = {
+    job_id:  jobId,
+    crew_id: parseInt(crewId),
+    eta:     document.getElementById('dispatch-eta').value,
+    notes:   document.getElementById('dispatch-notes').value.trim(),
+  };
+  try {
+    const res = await fetch('/api/dispatch', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    const btn = event.target;
+    btn.textContent = '✓ Dispatched!';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.textContent = '🚚 Dispatch Crew'; btn.style.background = ''; }, 2000);
+    await openScheduleModal(jobId, '', '', '');
+    loadTodayDispatch();
+    loadSchedStats();
+  } catch(e) { alert('Dispatch failed: ' + e.message); }
+}
+
+// ---------------------------------------------------------------------------
+// Today's Dispatch Queue
+// ---------------------------------------------------------------------------
+
+async function loadTodayDispatch() {
+  const el = document.getElementById('dispatch-queue');
+  if (!el) return;
+  try {
+    const all   = await fetch('/api/schedule').then(r => r.json());
+    const today = new Date().toISOString().split('T')[0];
+    const todayJobs = all.filter(s =>
+      s.scheduled_start <= today && (!s.scheduled_end || s.scheduled_end >= today)
+    ).slice(0, 8);
+    if (!todayJobs.length) {
+      el.innerHTML = '<div style="color:var(--muted);font-family:var(--font-mono);font-size:.7rem;text-align:center;padding:1.5rem 0">No jobs scheduled for today</div>';
+      return;
+    }
+    el.innerHTML = todayJobs.map(s =>
+      '<div onclick="openScheduleModal(\'' + s.job_id + '\',\'' + (s.contractor||'').replace(/'/g,'') + '\',\'' + (s.scope_type||'').replace(/'/g,'') + '\',\'' + (s.region||'').replace(/'/g,'') + '\')"' +
+        ' style="padding:.5rem .6rem;background:var(--bg);border-radius:5px;border:1px solid ' + (s.weather_hold?'var(--amber)':'var(--border)') + ';margin-bottom:.4rem;cursor:pointer">' +
+        '<div style="font-family:var(--font-mono);font-size:.72rem;font-weight:600;color:var(--text)">' + s.job_id + '</div>' +
+        '<div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted)">' + (s.contractor||'—') + ' · ' + (s.priority||'Normal') + '</div>' +
+        (s.weather_hold ? '<div style="font-family:var(--font-mono);font-size:.6rem;color:var(--amber);margin-top:.2rem">⚠️ Weather Hold</div>' : '') +
+      '</div>'
+    ).join('');
+  } catch(e) { console.error('[dispatch-queue]', e); }
+}
+
+// ---------------------------------------------------------------------------
+// Unscheduled Jobs List
+// ---------------------------------------------------------------------------
+
+async function loadUnscheduledJobs() {
+  const el = document.getElementById('unscheduled-list');
+  if (!el) return;
+  try {
+    const [allSched, sessionResp] = await Promise.all([
+      fetch('/api/schedule').then(r => r.json()),
+      fetch('/api/last-session').then(r => r.ok ? r.json() : null),
+    ]);
+    const scheduledIds = new Set(allSched.map(s => s.job_id));
+    const jobs  = (sessionResp && sessionResp.scored_jobs) ? sessionResp.scored_jobs : [];
+    const active = jobs.filter(j =>
+      ['In Progress','Open'].includes(j.status) && !scheduledIds.has(j.job_id)
+    );
+    if (!active.length) {
+      el.innerHTML = '<div style="color:var(--accent);font-family:var(--font-mono);font-size:.7rem;text-align:center;padding:1rem">✓ All active jobs are scheduled</div>';
+      return;
+    }
+    el.innerHTML = active.slice(0, 12).map(j =>
+      '<div onclick="openScheduleModal(\'' + j.job_id + '\',\'' + (j.contractor||'').replace(/'/g,'') + '\',\'' + (j.scope_type||'').replace(/'/g,'') + '\',\'' + (j.region||'').replace(/'/g,'') + '\')"' +
+        ' style="display:flex;justify-content:space-between;align-items:center;padding:.45rem .6rem;background:var(--bg);border-radius:5px;border:1px solid var(--border);margin-bottom:.35rem;cursor:pointer">' +
+        '<div>' +
+          '<div style="font-family:var(--font-mono);font-size:.7rem;font-weight:600;color:var(--text)">' + j.job_id + '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted)">' + (j.contractor||'—') + '</div>' +
+        '</div>' +
+        '<span style="font-family:var(--font-mono);font-size:.6rem;padding:.15rem .4rem;border-radius:3px;' +
+          'background:' + (j.risk_level==='HIGH'?'rgba(239,68,68,.15)':j.risk_level==='MEDIUM'?'rgba(245,158,11,.15)':'rgba(34,197,94,.1)') + ';' +
+          'color:' + (j.risk_level==='HIGH'?'var(--red)':j.risk_level==='MEDIUM'?'var(--amber)':'var(--accent)') + '">' + j.risk_level + '</span>' +
+      '</div>'
+    ).join('');
+  } catch(e) { console.error('[unscheduled]', e); }
+}
+
+// ---------------------------------------------------------------------------
+// Weather Widget
+// ---------------------------------------------------------------------------
+
+function loadWeather() {
+  const el = document.getElementById('weather-widget');
+  if (!el) return;
+  if (!navigator.geolocation) {
+    el.innerHTML = '<div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)">Geolocation not available</div>';
+    return;
+  }
+  el.innerHTML = '<div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);text-align:center;padding:.5rem">Detecting location…</div>';
+  navigator.geolocation.getCurrentPosition(async function(pos) {
+    const lat = pos.coords.latitude.toFixed(4);
+    const lng = pos.coords.longitude.toFixed(4);
+    try {
+      const res  = await fetch('/api/weather?lat=' + lat + '&lng=' + lng);
+      const data = await res.json();
+      if (!res.ok) {
+        el.innerHTML =
+          '<div style="font-family:var(--font-mono);font-size:.7rem;color:var(--amber);text-align:center;padding:.5rem 0">' +
+          'Weather requires an OpenWeather API key.<br>' +
+          'Set <code>OPENWEATHER_KEY</code> env var.</div>';
+        return;
+      }
+      el.innerHTML =
+        '<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem">' +
+          '<img src="https://openweathermap.org/img/wn/' + data.icon + '@2x.png" style="width:52px;height:52px" alt="">' +
+          '<div>' +
+            '<div style="font-size:1.6rem;font-weight:700;color:var(--text);line-height:1">' + data.temp_f + '°F</div>' +
+            '<div style="font-family:var(--font-mono);font-size:.68rem;color:var(--muted)">' + data.conditions + '</div>' +
+            '<div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted)">' + (data.city||'') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-family:var(--font-mono);font-size:.65rem">' +
+          '<div style="background:var(--bg);border-radius:5px;padding:.4rem .55rem"><div style="color:var(--muted)">WIND</div><div style="color:var(--text);font-weight:600">' + data.wind_mph + ' mph</div></div>' +
+          '<div style="background:var(--bg);border-radius:5px;padding:.4rem .55rem"><div style="color:var(--muted)">HUMIDITY</div><div style="color:var(--text);font-weight:600">' + data.humidity + '%</div></div>' +
+          '<div style="background:var(--bg);border-radius:5px;padding:.4rem .55rem"><div style="color:var(--muted)">RAIN/HR</div><div style="color:var(--text);font-weight:600">' + data.rain_1h + '"</div></div>' +
+          '<div style="background:var(--bg);border-radius:5px;padding:.4rem .55rem"><div style="color:var(--muted)">FEELS LIKE</div><div style="color:var(--text);font-weight:600">' + data.feels_like_f + '°F</div></div>' +
+        '</div>' +
+        (data.is_hold
+          ? '<div style="margin-top:.65rem;padding:.5rem .75rem;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:6px;font-family:var(--font-mono);font-size:.68rem;color:var(--red)">⛔ Conditions may warrant a weather hold (' + (data.wind_mph > 25 ? 'high winds' : 'heavy rain') + ')</div>'
+          : '<div style="margin-top:.65rem;padding:.5rem .75rem;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:6px;font-family:var(--font-mono);font-size:.68rem;color:var(--accent)">✓ Conditions suitable for outdoor work</div>');
+    } catch(e) {
+      el.innerHTML = '<div style="font-family:var(--font-mono);font-size:.7rem;color:var(--red)">Weather fetch failed</div>';
+    }
+  }, function() {
+    el.innerHTML =
+      '<div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);text-align:center;padding:.5rem 0">' +
+      'Location access denied.<br>' +
+      '<button onclick="loadWeather()" class="btn-secondary" style="font-size:.65rem;margin-top:.5rem;padding:.3rem .6rem">Try Again</button></div>';
+  });
+}
+
+// Close schedule modal on backdrop click
+document.getElementById('schedule-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeScheduleModal();
+});
 </script>
 </body>
 </html>
