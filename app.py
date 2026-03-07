@@ -38,6 +38,7 @@ from email_scheduler import (
     send_weekly_email, generate_weekly_report, preview_report,
     load_config, save_config, schedule_weekly_reports, stop_scheduler,
 )
+from database import init_database, get_all_jobs, create_job
 
 app = Flask(__name__, static_folder='static')
 # Use a stable secret key so sessions survive server restarts
@@ -49,6 +50,9 @@ logging.basicConfig(
     datefmt='%H:%M:%S',
 )
 logger = logging.getLogger(__name__)
+
+# Initialise SQLite database (no-op if already exists)
+init_database()
 
 LAST_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
 PREV_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'prev_session.json')
@@ -214,6 +218,25 @@ def prev_session():
             logger.error(f"[prev-session] {e}")
             return jsonify({'error': 'Internal server error'}), 500
     return jsonify({'error': 'No previous session'}), 404
+
+
+@app.route('/api/database/status', methods=['GET'])
+def database_status():
+    """Check whether the SQLite database is initialised and how many jobs it holds."""
+    try:
+        jobs = get_all_jobs()
+        return jsonify({
+            'database_initialized': True,
+            'job_count': len(jobs),
+            'status': 'ready',
+        })
+    except Exception as e:
+        logger.error(f"[database/status] {e}")
+        return jsonify({
+            'database_initialized': False,
+            'error': str(e),
+            'status': 'not_initialized',
+        }), 500
 
 
 @app.route('/api/upload', methods=['POST'])
