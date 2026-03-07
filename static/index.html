@@ -6,6 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>PRG Risk Intelligence</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/static/style.css">
@@ -63,6 +65,7 @@
     <div class="tab" data-tab="permits">Permits</div>
     <div class="tab" data-tab="contractors">Contractors</div>
     <div class="tab" data-tab="timeline">Timeline</div>
+    <div class="tab" data-tab="crews">Crews</div>
     <div class="tab" data-tab="settings">Settings</div>
     <div class="tab" data-tab="assistant">AI Assistant</div>
   </div>
@@ -439,9 +442,116 @@
       <div id="no-gantt-msg" class="no-data" style="display:none">No jobs with valid date data to display.</div>
     </div>
   </div>
+
+  <!-- CREWS TAB -->
+  <div class="tab-content" id="tab-crews">
+    <div class="content">
+      <div class="section-header" style="margin-bottom:1.25rem">
+        <div class="section-title">Crew Management</div>
+        <button class="btn-primary" onclick="openAddCrewModal()">+ Add Crew</button>
+      </div>
+      <div id="crew-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1.5rem"></div>
+      <div class="table-wrap">
+        <div class="filter-bar" style="flex-wrap:wrap;gap:.5rem;align-items:center">
+          <button class="filter-btn active-all" data-crew-filter="ALL" onclick="setCrewFilter('ALL',this)">All</button>
+          <button class="filter-btn" data-crew-filter="Available" onclick="setCrewFilter('Available',this)">🟢 Available</button>
+          <button class="filter-btn" data-crew-filter="On Job" onclick="setCrewFilter('On Job',this)">🟡 On Job</button>
+          <button class="filter-btn" data-crew-filter="Off Duty" onclick="setCrewFilter('Off Duty',this)">⚫ Off Duty</button>
+          <input id="crew-search" type="text" placeholder="Search name or skills…"
+            oninput="renderCrewTable()"
+            style="margin-left:auto;padding:.3rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.68rem;width:200px;outline:none">
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="padding:.6rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;font-weight:600">NAME</th>
+            <th style="padding:.6rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;font-weight:600">SKILLS</th>
+            <th style="padding:.6rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;font-weight:600">PHONE</th>
+            <th style="padding:.6rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;font-weight:600">RATE</th>
+            <th style="padding:.6rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;font-weight:600">STATUS</th>
+            <th style="padding:.6rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;font-weight:600">CURRENT JOB</th>
+            <th style="padding:.6rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;font-weight:600">CLOCK</th>
+            <th style="padding:.6rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em;font-weight:600">ACTIONS</th>
+          </tr></thead>
+          <tbody id="crew-tbody"></tbody>
+        </table>
+        <div id="no-crews-msg" class="no-data" style="display:none">No crew members found.</div>
+      </div>
+      <div style="margin-top:1.5rem">
+        <div class="section-header" style="margin-bottom:.75rem">
+          <div class="section-title" style="font-size:.9rem">Live Crew Locations</div>
+          <button class="btn-secondary" onclick="loadCrewMap()" style="font-size:.7rem;padding:.3rem .75rem">↺ Refresh</button>
+        </div>
+        <div id="crew-map" style="width:100%;height:380px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:var(--surface)"></div>
+        <div id="crew-map-msg" style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);margin-top:.5rem;text-align:center">GPS positions appear once crews share their location.</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
+<!-- ADD / EDIT CREW MODAL -->
+<div id="add-crew-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:480px;width:100%;max-height:88vh;overflow-y:auto">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1">
+      <div id="add-crew-modal-title" style="font-family:var(--font-mono);font-size:.75rem;font-weight:700;color:var(--text)">Add Crew Member</div>
+      <button onclick="closeAddCrewModal()" style="background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:.2rem .4rem">✕</button>
+    </div>
+    <div style="padding:1.5rem">
+      <input type="hidden" id="edit-crew-id">
+      <div style="display:grid;gap:1rem">
+        <div>
+          <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">FULL NAME *</label>
+          <input id="crew-form-name" type="text" placeholder="e.g. Mike Torres" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none">
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">SKILLS</label>
+          <input id="crew-form-skills" type="text" placeholder="e.g. Civil, Gas, Water" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none">
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">PHONE</label>
+          <input id="crew-form-phone" type="tel" placeholder="917-555-0100" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none">
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">HOURLY RATE ($)</label>
+          <input id="crew-form-rate" type="number" min="0" step="0.01" placeholder="45.00" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none">
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);display:block;margin-bottom:.35rem">STATUS</label>
+          <select id="crew-form-status" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none">
+            <option value="Available">Available</option>
+            <option value="On Job">On Job</option>
+            <option value="Off Duty">Off Duty</option>
+          </select>
+        </div>
+      </div>
+      <div id="crew-form-msg" style="font-family:var(--font-mono);font-size:.7rem;margin-top:.75rem;min-height:1rem"></div>
+      <div style="display:flex;gap:.75rem;margin-top:1.25rem">
+        <button onclick="submitCrewForm()" id="crew-form-submit-btn" style="flex:1;padding:.6rem;background:var(--accent);border:none;border-radius:6px;color:#fff;font-family:var(--font-mono);font-size:.75rem;font-weight:700;cursor:pointer">Save Crew Member</button>
+        <button onclick="closeAddCrewModal()" style="padding:.6rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:var(--font-mono);font-size:.75rem;cursor:pointer">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
 
+<!-- ASSIGN CREW MODAL -->
+<div id="assign-crew-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1001;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:420px;width:100%;overflow:hidden">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div style="font-family:var(--font-mono);font-size:.75rem;font-weight:700;color:var(--text)">Assign Crew to Job</div>
+      <button onclick="document.getElementById('assign-crew-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer">✕</button>
+    </div>
+    <div style="padding:1.25rem 1.5rem">
+      <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);margin-bottom:.35rem">JOB</div>
+      <div id="assign-job-id-label" style="font-family:var(--font-mono);font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:1rem"></div>
+      <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);margin-bottom:.35rem">SELECT CREW MEMBER</div>
+      <select id="assign-crew-select" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none;margin-bottom:.75rem"></select>
+      <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);margin-bottom:.35rem">NOTES (optional)</div>
+      <input id="assign-crew-notes" type="text" placeholder="e.g. Lead crew for excavation" style="width:100%;padding:.5rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.8rem;box-sizing:border-box;outline:none;margin-bottom:1rem">
+      <div id="assign-crew-msg" style="font-family:var(--font-mono);font-size:.7rem;min-height:1rem;margin-bottom:.75rem"></div>
+      <button onclick="submitCrewAssignment()" style="width:100%;padding:.6rem;background:var(--accent);border:none;border-radius:6px;color:#fff;font-family:var(--font-mono);font-size:.75rem;font-weight:700;cursor:pointer">Assign Crew</button>
+    </div>
+  </div>
+</div>
 
 <!-- CONTRACTOR MODAL -->
 <div id="contractor-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:1rem">
@@ -2186,6 +2296,200 @@ function renderGantt(data) {
       if (job) showJobModal(job);
     });
   });
+}
+
+// ─── CREW MANAGEMENT ────────────────────────────────────────────────────────
+
+let crewData = [];
+let crewFilter = 'ALL';
+let crewMap = null;
+let assignTargetJobId = null;
+
+document.querySelector('[data-tab="crews"]').addEventListener('click', () => { loadCrews(); });
+
+async function loadCrews() {
+  try {
+    const res = await fetch('/api/crews');
+    crewData = await res.json();
+    renderCrewKPIs();
+    renderCrewTable();
+  } catch(e) { console.error('[crews]', e); }
+}
+
+function renderCrewKPIs() {
+  const total     = crewData.length;
+  const available = crewData.filter(c => c.status === 'Available').length;
+  const onJob     = crewData.filter(c => c.status === 'On Job').length;
+  const clockedIn = crewData.filter(c => c.clocked_in).length;
+  document.getElementById('crew-kpi-grid').innerHTML = [
+    {label:'Total Crew', value:total,     sub:'registered members', cls:'blue'},
+    {label:'Available',  value:available, sub:'ready to assign',    cls:'green'},
+    {label:'On Job',     value:onJob,     sub:'currently deployed', cls:'amber'},
+    {label:'Clocked In', value:clockedIn, sub:'active right now',   cls:'accent'},
+  ].map(k => `<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+}
+
+function setCrewFilter(f, btn) {
+  crewFilter = f;
+  document.querySelectorAll('[data-crew-filter]').forEach(b => { b.className = 'filter-btn'; });
+  btn.className = 'filter-btn ' + (f==='ALL'?'active-all':f==='Available'?'active-low':f==='On Job'?'active-medium':'');
+  renderCrewTable();
+}
+
+function renderCrewTable() {
+  const q = (document.getElementById('crew-search')?.value||'').toLowerCase();
+  let rows = crewFilter==='ALL' ? crewData : crewData.filter(c => c.status===crewFilter);
+  if (q) rows = rows.filter(c => (c.name||'').toLowerCase().includes(q)||(c.skills||'').toLowerCase().includes(q));
+  const tbody = document.getElementById('crew-tbody');
+  const noMsg = document.getElementById('no-crews-msg');
+  if (!rows.length) { tbody.innerHTML=''; noMsg.style.display='block'; return; }
+  noMsg.style.display = 'none';
+  const sc = s => s==='Available'?'var(--green)':s==='On Job'?'var(--amber)':'var(--muted)';
+  tbody.innerHTML = rows.map(c => `
+    <tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
+      <td style="padding:.65rem 1rem;font-family:var(--font-mono);font-size:.78rem;font-weight:600;color:var(--text)">${safeText(c.name)}</td>
+      <td style="padding:.65rem 1rem;font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">${safeText(c.skills,'—')}</td>
+      <td style="padding:.65rem 1rem;font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">${safeText(c.phone,'—')}</td>
+      <td style="padding:.65rem 1rem;font-family:var(--font-mono);font-size:.72rem;color:var(--text)">$${Number(c.hourly_rate||0).toFixed(2)}/hr</td>
+      <td style="padding:.65rem 1rem"><span style="font-family:var(--font-mono);font-size:.65rem;font-weight:700;color:${sc(c.status)};background:${sc(c.status)}22;padding:.2rem .5rem;border-radius:4px">${safeText(c.status)}</span></td>
+      <td style="padding:.65rem 1rem;font-family:var(--font-mono);font-size:.72rem">${c.current_job?`<span style="color:var(--accent)">${safeText(c.current_job)}</span>`:'—'}</td>
+      <td style="padding:.65rem 1rem">
+        ${c.clocked_in
+          ? `<button onclick="crewClockOut(${c.id})" style="font-family:var(--font-mono);font-size:.65rem;padding:.25rem .6rem;background:#ff475722;border:1px solid var(--red);border-radius:4px;color:var(--red);cursor:pointer">Clock Out</button>`
+          : `<button onclick="crewClockIn(${c.id})"  style="font-family:var(--font-mono);font-size:.65rem;padding:.25rem .6rem;background:#22c55e22;border:1px solid var(--green);border-radius:4px;color:var(--green);cursor:pointer">Clock In</button>`}
+      </td>
+      <td style="padding:.65rem 1rem"><div style="display:flex;gap:.4rem">
+        <button onclick="openEditCrewModal(${c.id})" style="font-family:var(--font-mono);font-size:.62rem;padding:.2rem .5rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer">Edit</button>
+        <button onclick="shareCrewLocation(${c.id})" style="font-family:var(--font-mono);font-size:.62rem;padding:.2rem .5rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer">📍</button>
+        <button onclick="confirmDeleteCrew(${c.id},'${safeText(c.name)}')" style="font-family:var(--font-mono);font-size:.62rem;padding:.2rem .5rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--red);cursor:pointer">✕</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function openAddCrewModal() {
+  document.getElementById('edit-crew-id').value='';
+  document.getElementById('add-crew-modal-title').textContent='Add Crew Member';
+  ['name','skills','phone','rate'].forEach(f => document.getElementById('crew-form-'+f).value='');
+  document.getElementById('crew-form-status').value='Available';
+  document.getElementById('crew-form-msg').textContent='';
+  document.getElementById('add-crew-modal').style.display='flex';
+}
+
+function openEditCrewModal(crewId) {
+  const c = crewData.find(x => x.id===crewId); if (!c) return;
+  document.getElementById('edit-crew-id').value=crewId;
+  document.getElementById('add-crew-modal-title').textContent='Edit Crew Member';
+  document.getElementById('crew-form-name').value=c.name||'';
+  document.getElementById('crew-form-skills').value=c.skills||'';
+  document.getElementById('crew-form-phone').value=c.phone||'';
+  document.getElementById('crew-form-rate').value=c.hourly_rate||'';
+  document.getElementById('crew-form-status').value=c.status||'Available';
+  document.getElementById('crew-form-msg').textContent='';
+  document.getElementById('add-crew-modal').style.display='flex';
+}
+
+function closeAddCrewModal() { document.getElementById('add-crew-modal').style.display='none'; }
+document.getElementById('add-crew-modal').addEventListener('click', e => { if(e.target===document.getElementById('add-crew-modal')) closeAddCrewModal(); });
+
+async function submitCrewForm() {
+  const name=document.getElementById('crew-form-name').value.trim();
+  const msg=document.getElementById('crew-form-msg');
+  const btn=document.getElementById('crew-form-submit-btn');
+  if (!name) { msg.style.color='var(--red)'; msg.textContent='Name is required.'; return; }
+  const payload={name, skills:document.getElementById('crew-form-skills').value.trim(),
+    phone:document.getElementById('crew-form-phone').value.trim(),
+    hourly_rate:parseFloat(document.getElementById('crew-form-rate').value)||0,
+    status:document.getElementById('crew-form-status').value};
+  const editId=document.getElementById('edit-crew-id').value;
+  btn.disabled=true; btn.textContent='Saving…';
+  try {
+    const res=await fetch(editId?`/api/crews/${editId}`:'/api/crews',
+      {method:editId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if (!res.ok){msg.style.color='var(--red)';msg.textContent=data.error||'Failed';return;}
+    msg.style.color='var(--green)'; msg.textContent='✓ Saved';
+    setTimeout(()=>{closeAddCrewModal();loadCrews();},600);
+  } catch(e){msg.style.color='var(--red)';msg.textContent='✗ '+e.message;}
+  finally{btn.disabled=false;btn.textContent='Save Crew Member';}
+}
+
+async function confirmDeleteCrew(id,name) {
+  if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+  await fetch(`/api/crews/${id}`,{method:'DELETE'}); loadCrews();
+}
+
+async function crewClockIn(crewId) {
+  const c=crewData.find(x=>x.id===crewId);
+  await fetch('/api/crews/clock-in',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({crew_id:crewId,job_id:c?.current_job||null})});
+  loadCrews();
+}
+
+async function crewClockOut(crewId) {
+  await fetch('/api/crews/clock-out',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({crew_id:crewId})});
+  loadCrews();
+}
+
+function shareCrewLocation(crewId) {
+  if (!navigator.geolocation){alert('Geolocation not supported.');return;}
+  navigator.geolocation.getCurrentPosition(async pos => {
+    await fetch('/api/crews/location',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({crew_id:crewId,latitude:pos.coords.latitude,longitude:pos.coords.longitude})});
+    loadCrewMap();
+  },()=>alert('Could not get location. Allow location access and try again.'));
+}
+
+async function loadCrewMap() {
+  try {
+    const res=await fetch('/api/crews/locations');
+    const locs=await res.json();
+    const msg=document.getElementById('crew-map-msg');
+    if (!locs.length){msg.textContent='No crew locations reported yet.';return;}
+    msg.textContent=`${locs.length} crew member${locs.length!==1?'s':''} reporting location`;
+    if (!crewMap) {
+      crewMap=L.map('crew-map').setView([locs[0].latitude,locs[0].longitude],11);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(crewMap);
+    } else { crewMap.eachLayer(l=>{if(l instanceof L.Marker)crewMap.removeLayer(l);}); }
+    locs.forEach(loc=>{
+      const icon=L.divIcon({html:`<div style="background:#22c55e;color:#fff;font-family:monospace;font-size:10px;padding:2px 6px;border-radius:10px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,.4)">${loc.name}</div>`,className:'',iconAnchor:[0,10]});
+      L.marker([loc.latitude,loc.longitude],{icon}).addTo(crewMap).bindPopup(`<b>${loc.name}</b><br>${new Date(loc.timestamp).toLocaleString()}`);
+    });
+    crewMap.fitBounds(L.latLngBounds(locs.map(l=>[l.latitude,l.longitude])),{padding:[30,30]});
+  } catch(e){console.error('[crew map]',e);}
+}
+
+async function openAssignCrewModal(jobId) {
+  assignTargetJobId=jobId;
+  document.getElementById('assign-job-id-label').textContent=jobId;
+  document.getElementById('assign-crew-notes').value='';
+  document.getElementById('assign-crew-msg').textContent='';
+  const res=await fetch('/api/crews');
+  const crews=await res.json();
+  document.getElementById('assign-crew-select').innerHTML=crews.map(c=>
+    `<option value="${c.id}">${safeText(c.name)} — ${safeText(c.status)}${c.current_job?' ('+safeText(c.current_job)+')':''}</option>`
+  ).join('');
+  document.getElementById('assign-crew-modal').style.display='flex';
+}
+
+document.getElementById('assign-crew-modal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('assign-crew-modal'))
+    document.getElementById('assign-crew-modal').style.display='none';
+});
+
+async function submitCrewAssignment() {
+  const crewId=document.getElementById('assign-crew-select').value;
+  const notes=document.getElementById('assign-crew-notes').value.trim();
+  const msg=document.getElementById('assign-crew-msg');
+  if (!crewId||!assignTargetJobId) return;
+  try {
+    const res=await fetch('/api/crews/assign',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({crew_id:parseInt(crewId),job_id:assignTargetJobId,notes})});
+    const data=await res.json();
+    if (!res.ok){msg.style.color='var(--red)';msg.textContent=data.error||'Failed';return;}
+    msg.style.color='var(--green)'; msg.textContent='✓ Crew assigned';
+    setTimeout(()=>{document.getElementById('assign-crew-modal').style.display='none';},700);
+  } catch(e){msg.style.color='var(--red)';msg.textContent='✗ '+e.message;}
 }
 </script>
 </body>

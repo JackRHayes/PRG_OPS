@@ -39,6 +39,13 @@ from email_scheduler import (
     load_config, save_config, schedule_weekly_reports, stop_scheduler,
 )
 from database import init_database, get_all_jobs, create_job
+from crew_management import (
+    init_crew_tables, seed_sample_crews,
+    create_crew, get_crew, get_all_crews, update_crew, delete_crew,
+    assign_crew_to_job, get_crews_for_job,
+    update_location, get_all_locations,
+    clock_in, clock_out, get_crew_hours,
+)
 
 app = Flask(__name__, static_folder='static')
 # Use a stable secret key so sessions survive server restarts
@@ -51,8 +58,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialise SQLite database (no-op if already exists)
+# Initialise SQLite database and crew tables (no-op if already exists)
 init_database()
+init_crew_tables()
+seed_sample_crews()
 
 LAST_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
 PREV_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'prev_session.json')
@@ -237,6 +246,139 @@ def database_status():
             'error': str(e),
             'status': 'not_initialized',
         }), 500
+
+
+# ---------------------------------------------------------------------------
+# CREW ROUTES
+# ---------------------------------------------------------------------------
+
+@app.route('/api/crews', methods=['GET'])
+def list_crews():
+    try:
+        return jsonify(get_all_crews())
+    except Exception as e:
+        logger.error(f"[crews GET] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/crews', methods=['POST'])
+def add_crew():
+    data = request.get_json(silent=True) or {}
+    if not data.get('name', '').strip():
+        return jsonify({'error': 'name is required'}), 400
+    try:
+        crew = create_crew(data)
+        return jsonify(crew), 201
+    except Exception as e:
+        logger.error(f"[crews POST] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/crews/<int:crew_id>', methods=['GET'])
+def get_crew_route(crew_id):
+    crew = get_crew(crew_id)
+    if not crew:
+        return jsonify({'error': 'Crew not found'}), 404
+    return jsonify(crew)
+
+
+@app.route('/api/crews/<int:crew_id>', methods=['PUT'])
+def update_crew_route(crew_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        crew = update_crew(crew_id, data)
+        return jsonify(crew)
+    except Exception as e:
+        logger.error(f"[crews PUT] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/crews/<int:crew_id>', methods=['DELETE'])
+def delete_crew_route(crew_id):
+    ok = delete_crew(crew_id)
+    return jsonify({'ok': ok})
+
+
+@app.route('/api/crews/assign', methods=['POST'])
+def assign_crew():
+    data = request.get_json(silent=True) or {}
+    crew_id = data.get('crew_id')
+    job_id  = data.get('job_id', '').strip()
+    if not crew_id or not job_id:
+        return jsonify({'error': 'crew_id and job_id are required'}), 400
+    try:
+        assignment = assign_crew_to_job(int(crew_id), job_id, data.get('notes', ''))
+        return jsonify(assignment), 201
+    except Exception as e:
+        logger.error(f"[crews/assign] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/jobs/<job_id>/crews', methods=['GET'])
+def job_crews(job_id):
+    try:
+        return jsonify(get_crews_for_job(job_id))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/crews/location', methods=['POST'])
+def post_location():
+    data = request.get_json(silent=True) or {}
+    crew_id = data.get('crew_id')
+    lat     = data.get('latitude')
+    lng     = data.get('longitude')
+    if not all([crew_id, lat is not None, lng is not None]):
+        return jsonify({'error': 'crew_id, latitude, longitude required'}), 400
+    try:
+        loc = update_location(int(crew_id), float(lat), float(lng))
+        return jsonify(loc), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/crews/locations', methods=['GET'])
+def all_locations():
+    try:
+        return jsonify(get_all_locations())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/crews/clock-in', methods=['POST'])
+def crew_clock_in():
+    data    = request.get_json(silent=True) or {}
+    crew_id = data.get('crew_id')
+    if not crew_id:
+        return jsonify({'error': 'crew_id required'}), 400
+    try:
+        log = clock_in(int(crew_id), data.get('job_id'))
+        return jsonify(log), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/crews/clock-out', methods=['POST'])
+def crew_clock_out():
+    data    = request.get_json(silent=True) or {}
+    crew_id = data.get('crew_id')
+    if not crew_id:
+        return jsonify({'error': 'crew_id required'}), 400
+    try:
+        log = clock_out(int(crew_id))
+        if not log:
+            return jsonify({'error': 'No active clock-in found'}), 404
+        return jsonify(log)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/crews/<int:crew_id>/hours', methods=['GET'])
+def crew_hours(crew_id):
+    try:
+        return jsonify(get_crew_hours(crew_id))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/upload', methods=['POST'])
