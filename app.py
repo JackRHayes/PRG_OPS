@@ -46,6 +46,17 @@ from crew_management import (
     update_location, get_all_locations,
     clock_in, clock_out, get_crew_hours,
 )
+from financial_tracking import (
+    init_financial_tables,
+    set_budget, get_budget,
+    add_expense, get_expenses, delete_expense,
+    get_job_financials, get_financials_overview,
+)
+from document_manager import (
+    init_document_tables,
+    save_document, get_job_documents, get_document,
+    delete_document, update_document, CATEGORIES,
+)
 
 app = Flask(__name__, static_folder='static')
 # Use a stable secret key so sessions survive server restarts
@@ -58,10 +69,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialise SQLite database and crew tables (no-op if already exists)
+# Initialise SQLite database and all module tables (no-op if already exists)
 init_database()
 init_crew_tables()
 seed_sample_crews()
+init_financial_tables()
+init_document_tables()
 
 LAST_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'last_session.json')
 PREV_SESSION_PATH    = os.path.join(os.path.dirname(__file__), 'outputs', 'prev_session.json')
@@ -379,6 +392,128 @@ def crew_hours(crew_id):
         return jsonify(get_crew_hours(crew_id))
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# FINANCIAL ROUTES
+# ---------------------------------------------------------------------------
+
+@app.route('/api/jobs/<job_id>/budget', methods=['POST'])
+def job_budget(job_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(set_budget(job_id, data))
+    except Exception as e:
+        logger.error(f"[budget POST] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/jobs/<job_id>/financials', methods=['GET'])
+def job_financials(job_id):
+    try:
+        return jsonify(get_job_financials(job_id))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/jobs/<job_id>/expenses', methods=['GET'])
+def list_expenses(job_id):
+    try:
+        return jsonify(get_expenses(job_id))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/jobs/<job_id>/expenses', methods=['POST'])
+def create_expense(job_id):
+    data = request.get_json(silent=True) or {}
+    if not data.get('amount'):
+        return jsonify({'error': 'amount is required'}), 400
+    try:
+        return jsonify(add_expense(job_id, data)), 201
+    except Exception as e:
+        logger.error(f"[expenses POST] {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/expenses/<int:expense_id>', methods=['DELETE'])
+def remove_expense(expense_id):
+    ok = delete_expense(expense_id)
+    return jsonify({'ok': ok})
+
+
+@app.route('/api/financials/overview', methods=['GET'])
+def financials_overview():
+    try:
+        return jsonify(get_financials_overview())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# DOCUMENT ROUTES
+# ---------------------------------------------------------------------------
+
+@app.route('/api/documents/upload', methods=['POST'])
+def upload_document():
+    job_id = request.form.get('job_id', '').strip()
+    if not job_id:
+        return jsonify({'error': 'job_id is required'}), 400
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    try:
+        doc = save_document(
+            job_id,
+            request.files['file'],
+            category    = request.form.get('category', 'Other'),
+            notes       = request.form.get('notes', ''),
+            uploaded_by = request.form.get('uploaded_by', ''),
+        )
+        return jsonify(doc), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"[doc upload] {e}")
+        return jsonify({'error': 'Upload failed'}), 500
+
+
+@app.route('/api/jobs/<job_id>/documents', methods=['GET'])
+def list_documents(job_id):
+    cat = request.args.get('category')
+    try:
+        return jsonify(get_job_documents(job_id, cat))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/documents/<int:doc_id>', methods=['GET'])
+def download_document(doc_id):
+    doc = get_document(doc_id)
+    if not doc:
+        return jsonify({'error': 'Not found'}), 404
+    try:
+        return send_file(doc['filepath'], as_attachment=True,
+                         download_name=doc['filename'])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/documents/<int:doc_id>', methods=['PUT'])
+def patch_document(doc_id):
+    data = request.get_json(silent=True) or {}
+    doc  = update_document(doc_id, data)
+    return jsonify(doc) if doc else (jsonify({'error': 'Not found'}), 404)
+
+
+@app.route('/api/documents/<int:doc_id>', methods=['DELETE'])
+def remove_document(doc_id):
+    ok = delete_document(doc_id)
+    return jsonify({'ok': ok})
+
+
+@app.route('/api/documents/categories', methods=['GET'])
+def document_categories():
+    return jsonify(CATEGORIES)
 
 
 @app.route('/api/upload', methods=['POST'])

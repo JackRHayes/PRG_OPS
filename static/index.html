@@ -66,6 +66,7 @@
     <div class="tab" data-tab="contractors">Contractors</div>
     <div class="tab" data-tab="timeline">Timeline</div>
     <div class="tab" data-tab="crews">Crews</div>
+    <div class="tab" data-tab="financials">Financials</div>
     <div class="tab" data-tab="settings">Settings</div>
     <div class="tab" data-tab="assistant">AI Assistant</div>
   </div>
@@ -483,6 +484,41 @@
         </div>
         <div id="crew-map" style="width:100%;height:380px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:var(--surface)"></div>
         <div id="crew-map-msg" style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);margin-top:.5rem;text-align:center">GPS positions appear once crews share their location.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINANCIALS TAB -->
+  <div class="tab-content" id="tab-financials">
+    <div class="content">
+      <div class="section-header" style="margin-bottom:1.25rem">
+        <div class="section-title">Company Financials</div>
+        <button class="btn-secondary" onclick="loadFinancialsOverview()" style="font-size:.7rem;padding:.3rem .75rem">↺ Refresh</button>
+      </div>
+      <div id="fin-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;margin-bottom:1.5rem"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
+        <div class="card" style="padding:1.25rem">
+          <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem">Budget vs Actual — Top Jobs</div>
+          <div style="position:relative;height:220px"><canvas id="chart-fin-bar"></canvas></div>
+        </div>
+        <div class="card" style="padding:1.25rem">
+          <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem">Cost Breakdown</div>
+          <div style="position:relative;height:220px"><canvas id="chart-fin-pie"></canvas></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:.75rem 1rem;border-bottom:1px solid var(--border)">Over Budget Jobs</div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="padding:.5rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em">JOB ID</th>
+            <th style="padding:.5rem 1rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em">CONTRACTOR</th>
+            <th style="padding:.5rem 1rem;text-align:right;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em">BUDGET</th>
+            <th style="padding:.5rem 1rem;text-align:right;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em">ACTUAL</th>
+            <th style="padding:.5rem 1rem;text-align:right;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em">OVER BY</th>
+          </tr></thead>
+          <tbody id="fin-over-tbody"></tbody>
+        </table>
+        <div id="fin-over-empty" class="no-data" style="display:none">No jobs are currently over budget.</div>
       </div>
     </div>
   </div>
@@ -1197,6 +1233,25 @@ function showJobModal(job) {
       <button id="jm-note-save" style="padding:.45rem 1rem;background:var(--accent);border:none;color:var(--bg);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:.7rem;font-weight:600">Save Note</button>
       <span id="jm-note-status" style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)">${existingNote ? 'Saved ' + new Date(existingNote.updated_at).toLocaleString() : ''}</span>
     </div>
+  </div>`;
+
+  // Assign crew button
+  html += `<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:.75rem;flex-wrap:wrap">
+    <button onclick="openAssignCrewModal('${job.job_id}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">👷 Assign Crew</button>
+    <button onclick="openJobFinancials('${job.job_id}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">💰 Financials</button>
+    <button onclick="openJobDocuments('${job.job_id}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">📄 Documents</button>
+  </div>`;
+
+  // Financials panel (lazy loaded)
+  html += `<div id="jm-financials" style="display:none;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+    <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">💰 Job Financials</div>
+    <div id="jm-fin-body"><div style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">Loading…</div></div>
+  </div>`;
+
+  // Documents panel (lazy loaded)
+  html += `<div id="jm-documents" style="display:none;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+    <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">📄 Documents</div>
+    <div id="jm-docs-body"><div style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">Loading…</div></div>
   </div>`;
 
   document.getElementById('jm-body').innerHTML = html;
@@ -2490,6 +2545,290 @@ async function submitCrewAssignment() {
     msg.style.color='var(--green)'; msg.textContent='✓ Crew assigned';
     setTimeout(()=>{document.getElementById('assign-crew-modal').style.display='none';},700);
   } catch(e){msg.style.color='var(--red)';msg.textContent='✗ '+e.message;}
+}
+
+// ─── FINANCIALS ─────────────────────────────────────────────────────────────
+
+let finCharts = {};
+
+document.querySelector('[data-tab="financials"]').addEventListener('click', loadFinancialsOverview);
+
+async function loadFinancialsOverview() {
+  try {
+    const res = await fetch('/api/financials/overview');
+    const d   = await res.json();
+    const fmt = n => '$' + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});
+
+    document.getElementById('fin-kpi-grid').innerHTML = [
+      {label:'Total Budget',  value:fmt(d.total_budget),  sub:'across all jobs',   cls:'blue'},
+      {label:'Total Spent',   value:fmt(d.total_spent),   sub:'actual costs',      cls:'amber'},
+      {label:'Remaining',     value:fmt(d.remaining),     sub:'budget left',       cls: d.remaining>=0?'green':'red'},
+      {label:'Over Budget',   value:d.over_budget_count,  sub:'jobs need review',  cls: d.over_budget_count>0?'red':'green'},
+      {label:'Utilization',   value:d.utilization+'%',    sub:'budget used',       cls:'accent'},
+    ].map(k=>`<div class="kpi-card ${k.cls}"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+    // Bar chart: top jobs by spend vs budget
+    const top = (d.top_spending_jobs||[]).slice(0,8);
+    if (top.length) {
+      if (finCharts['fin-bar']) { finCharts['fin-bar'].destroy(); }
+      finCharts['fin-bar'] = new Chart(document.getElementById('chart-fin-bar'), {
+        type:'bar',
+        data:{
+          labels: top.map(j=>j.job_id),
+          datasets:[
+            {label:'Budget', data:top.map(j=>j.total_budget||0), backgroundColor:'rgba(139,92,246,.35)', borderColor:'rgba(139,92,246,.8)', borderWidth:1},
+            {label:'Actual', data:top.map(j=>j.actual_cost||0),  backgroundColor:'rgba(255,71,87,.5)',   borderColor:'rgba(255,71,87,.8)',   borderWidth:1},
+          ]
+        },
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'var(--muted)',font:{size:10}}}},
+          scales:{x:{ticks:{color:'var(--muted)',font:{size:9}}},y:{ticks:{color:'var(--muted)',font:{size:9},callback:v=>'$'+Number(v).toLocaleString()}}}}
+      });
+    }
+
+    // Pie: cost breakdown
+    if (d.total_labor > 0 || d.total_material > 0) {
+      if (finCharts['fin-pie']) { finCharts['fin-pie'].destroy(); }
+      finCharts['fin-pie'] = new Chart(document.getElementById('chart-fin-pie'), {
+        type:'doughnut',
+        data:{
+          labels:['Labor','Materials','Other'],
+          datasets:[{data:[d.total_labor,d.total_material,Math.max(0,d.total_spent-d.total_labor-d.total_material)],
+            backgroundColor:['rgba(34,197,94,.7)','rgba(250,165,2,.7)','rgba(139,92,246,.7)'],borderWidth:0}]
+        },
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'var(--muted)',font:{size:10}}}}}
+      });
+    }
+
+    // Over budget table
+    const tbody = document.getElementById('fin-over-tbody');
+    const empty = document.getElementById('fin-over-empty');
+    const over  = d.over_budget_jobs||[];
+    if (!over.length) { tbody.innerHTML=''; empty.style.display='block'; }
+    else {
+      empty.style.display='none';
+      tbody.innerHTML = over.map(j=>`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.55rem 1rem;font-family:var(--font-mono);font-size:.72rem;color:var(--accent)">${safeText(j.job_id)}</td>
+        <td style="padding:.55rem 1rem;font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">${safeText(j.contractor,'—')}</td>
+        <td style="padding:.55rem 1rem;font-family:var(--font-mono);font-size:.72rem;color:var(--text);text-align:right">$${Number(j.total_budget||0).toLocaleString()}</td>
+        <td style="padding:.55rem 1rem;font-family:var(--font-mono);font-size:.72rem;color:var(--red);text-align:right">$${Number(j.actual_cost||0).toLocaleString()}</td>
+        <td style="padding:.55rem 1rem;font-family:var(--font-mono);font-size:.72rem;color:var(--red);text-align:right">$${Number((j.actual_cost||0)-(j.total_budget||0)).toLocaleString()}</td>
+      </tr>`).join('');
+    }
+  } catch(e) { console.error('[financials overview]', e); }
+}
+
+// ── Job modal — Financials panel ─────────────────────────────────────────────
+
+async function openJobFinancials(jobId) {
+  const panel = document.getElementById('jm-financials');
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+  if (panel.style.display==='none') return;
+  await renderJobFinancials(jobId);
+}
+
+async function renderJobFinancials(jobId) {
+  const body = document.getElementById('jm-fin-body');
+  body.innerHTML = '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">Loading…</div>';
+  try {
+    const res = await fetch(`/api/jobs/${jobId}/financials`);
+    const d   = await res.json();
+    const fmt = n => '$' + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const b   = d.budget||{};
+    const pct = d.utilization||0;
+    const barColor = pct>100?'var(--red)':pct>75?'var(--amber)':'var(--green)';
+
+    body.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.75rem;margin-bottom:1rem">
+      ${[['Total Budget',fmt(b.total_budget),'blue'],['Actual Cost',fmt(d.actual_cost),d.over_budget?'red':'green'],
+         ['Remaining',fmt(d.remaining),d.remaining>=0?'green':'red'],['Utilization',pct+'%',d.over_budget?'red':'amber']]
+        .map(([l,v,c])=>`<div class="kpi-card ${c}" style="padding:.6rem .8rem"><div class="kpi-label">${l}</div><div class="kpi-value" style="font-size:1rem">${v}</div></div>`).join('')}
+    </div>
+    <div style="margin-bottom:.5rem;background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+      <div style="height:100%;width:${Math.min(pct,100)}%;background:${barColor};border-radius:4px;transition:width .4s"></div>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);margin-bottom:1rem">${pct}% of budget used</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:1.25rem">
+      ${[['Labor Budget',fmt(b.labor_budget)],['Material Budget',fmt(b.material_budget)],['Other Budget',fmt(b.other_budget)]]
+        .map(([l,v])=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.5rem .75rem"><div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted)">${l}</div><div style="font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:var(--text)">${v}</div></div>`).join('')}
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+      <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Set Budget</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:.5rem;margin-bottom:1.25rem">
+      <input id="fin-labor-in" type="number" min="0" placeholder="Labor" value="${b.labor_budget||''}" style="padding:.4rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.72rem;outline:none">
+      <input id="fin-material-in" type="number" min="0" placeholder="Material" value="${b.material_budget||''}" style="padding:.4rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.72rem;outline:none">
+      <input id="fin-other-in" type="number" min="0" placeholder="Other" value="${b.other_budget||''}" style="padding:.4rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.72rem;outline:none">
+      <input id="fin-total-in" type="number" min="0" placeholder="Total" value="${b.total_budget||''}" style="padding:.4rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.72rem;outline:none">
+      <button onclick="saveBudget('${jobId}')" style="padding:.4rem .75rem;background:var(--accent);border:none;border-radius:5px;color:#fff;font-family:var(--font-mono);font-size:.68rem;cursor:pointer;white-space:nowrap">Save</button>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+      <div style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase">Expenses</div>
+      <button onclick="toggleAddExpense('${jobId}')" style="font-family:var(--font-mono);font-size:.65rem;padding:.25rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);cursor:pointer">+ Add Expense</button>
+    </div>
+    <div id="add-expense-form" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.75rem;margin-bottom:.75rem;display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 2fr auto;gap:.5rem;align-items:end">
+        <div><div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-bottom:.25rem">DATE</div>
+          <input id="exp-date-in" type="date" style="width:100%;padding:.35rem .5rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:.7rem;box-sizing:border-box;outline:none"></div>
+        <div><div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-bottom:.25rem">CATEGORY</div>
+          <select id="exp-cat-in" style="width:100%;padding:.35rem .5rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:.7rem;box-sizing:border-box;outline:none">
+            <option>Labor</option><option>Materials</option><option>Equipment</option><option>Permits</option><option>Other</option>
+          </select></div>
+        <div><div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-bottom:.25rem">AMOUNT ($)</div>
+          <input id="exp-amt-in" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%;padding:.35rem .5rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:.7rem;box-sizing:border-box;outline:none"></div>
+        <div><div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-bottom:.25rem">DESCRIPTION</div>
+          <input id="exp-desc-in" type="text" placeholder="e.g. Concrete delivery" style="width:100%;padding:.35rem .5rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:.7rem;box-sizing:border-box;outline:none"></div>
+        <button onclick="submitExpense('${jobId}')" style="padding:.35rem .65rem;background:var(--accent);border:none;border-radius:4px;color:#fff;font-family:var(--font-mono);font-size:.68rem;cursor:pointer;height:28px">Add</button>
+      </div>
+      <div id="exp-msg" style="font-family:var(--font-mono);font-size:.68rem;margin-top:.4rem;min-height:.9rem"></div>
+    </div>
+    ${(d.expenses||[]).length ? `
+    <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:.7rem">
+      <thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="padding:.4rem .6rem;text-align:left;color:var(--muted);font-size:.6rem;letter-spacing:.08em">DATE</th>
+        <th style="padding:.4rem .6rem;text-align:left;color:var(--muted);font-size:.6rem;letter-spacing:.08em">CATEGORY</th>
+        <th style="padding:.4rem .6rem;text-align:left;color:var(--muted);font-size:.6rem;letter-spacing:.08em">DESCRIPTION</th>
+        <th style="padding:.4rem .6rem;text-align:right;color:var(--muted);font-size:.6rem;letter-spacing:.08em">AMOUNT</th>
+        <th style="padding:.4rem .6rem"></th>
+      </tr></thead>
+      <tbody>${(d.expenses||[]).map(e=>`
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:.4rem .6rem;color:var(--muted)">${safeText(e.expense_date)}</td>
+          <td style="padding:.4rem .6rem;color:var(--text)">${safeText(e.category)}</td>
+          <td style="padding:.4rem .6rem;color:var(--muted)">${safeText(e.description,'—')}</td>
+          <td style="padding:.4rem .6rem;text-align:right;color:var(--text)">$${Number(e.amount||0).toFixed(2)}</td>
+          <td style="padding:.4rem .6rem"><button onclick="removeExpense(${e.id},'${jobId}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem">✕</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>` : `<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted);padding:.5rem 0">No expenses logged yet.</div>`}`;
+  } catch(e) { body.innerHTML = `<div style="color:var(--red);font-family:var(--font-mono);font-size:.72rem">Failed to load financials.</div>`; }
+}
+
+function toggleAddExpense(jobId) {
+  const f = document.getElementById('add-expense-form');
+  f.style.display = f.style.display==='none'||!f.style.display ? 'block' : 'none';
+}
+
+async function saveBudget(jobId) {
+  const payload = {
+    labor_budget:    parseFloat(document.getElementById('fin-labor-in').value)||0,
+    material_budget: parseFloat(document.getElementById('fin-material-in').value)||0,
+    other_budget:    parseFloat(document.getElementById('fin-other-in').value)||0,
+    total_budget:    parseFloat(document.getElementById('fin-total-in').value)||0,
+  };
+  await fetch(`/api/jobs/${jobId}/budget`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  await renderJobFinancials(jobId);
+}
+
+async function submitExpense(jobId) {
+  const msg = document.getElementById('exp-msg');
+  const payload = {
+    expense_date: document.getElementById('exp-date-in').value || new Date().toISOString().split('T')[0],
+    category:     document.getElementById('exp-cat-in').value,
+    amount:       parseFloat(document.getElementById('exp-amt-in').value),
+    description:  document.getElementById('exp-desc-in').value.trim(),
+  };
+  if (!payload.amount) { msg.style.color='var(--red)'; msg.textContent='Amount is required.'; return; }
+  try {
+    const res = await fetch(`/api/jobs/${jobId}/expenses`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if (!res.ok) { const d=await res.json(); msg.style.color='var(--red)'; msg.textContent=d.error||'Failed'; return; }
+    await renderJobFinancials(jobId);
+  } catch(e) { msg.style.color='var(--red)'; msg.textContent='✗ '+e.message; }
+}
+
+async function removeExpense(expId, jobId) {
+  if (!confirm('Delete this expense?')) return;
+  await fetch(`/api/expenses/${expId}`,{method:'DELETE'});
+  await renderJobFinancials(jobId);
+}
+
+// ─── DOCUMENTS ───────────────────────────────────────────────────────────────
+
+async function openJobDocuments(jobId) {
+  const panel = document.getElementById('jm-documents');
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+  if (panel.style.display==='none') return;
+  await renderJobDocuments(jobId);
+}
+
+async function renderJobDocuments(jobId) {
+  const body = document.getElementById('jm-docs-body');
+  body.innerHTML = '<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">Loading…</div>';
+  try {
+    const res  = await fetch(`/api/jobs/${jobId}/documents`);
+    const docs = await res.json();
+    const extIcon = ext => ({'.pdf':'📄','.jpg':'🖼','.jpeg':'🖼','.png':'🖼','.doc':'📝','.docx':'📝','.xls':'📊','.xlsx':'📊'}[ext]||'📎');
+    body.innerHTML = `
+    <div id="doc-upload-zone" style="border:2px dashed var(--border);border-radius:8px;padding:1.25rem;text-align:center;margin-bottom:1rem;cursor:pointer;transition:border-color .2s"
+      ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+      ondragleave="this.style.borderColor='var(--border)'"
+      ondrop="handleDocDrop(event,'${jobId}')">
+      <div style="font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">Drop files here or <label for="doc-file-in" style="color:var(--accent);cursor:pointer;text-decoration:underline">browse</label></div>
+      <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);margin-top:.25rem">PDF, JPG, PNG, DOC, DOCX, XLS, XLSX — max 10MB</div>
+      <input id="doc-file-in" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style="display:none" onchange="uploadDocFiles(this.files,'${jobId}')">
+    </div>
+    <select id="doc-cat-sel" style="margin-bottom:.75rem;padding:.35rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.7rem;outline:none">
+      <option value="">All Categories</option>
+      ${['Permits','RFIs','Photos','Contracts','Drawings','Other'].map(c=>`<option value="${c}">${c}</option>`).join('')}
+    </select>
+    <div id="doc-upload-msg" style="font-family:var(--font-mono);font-size:.7rem;min-height:.9rem;margin-bottom:.5rem"></div>
+    ${docs.length ? `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="padding:.4rem .6rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted)">FILE</th>
+        <th style="padding:.4rem .6rem;text-align:left;font-family:var(--font-mono);font-size:.6rem;color:var(--muted)">CATEGORY</th>
+        <th style="padding:.4rem .6rem;text-align:right;font-family:var(--font-mono);font-size:.6rem;color:var(--muted)">SIZE</th>
+        <th style="padding:.4rem .6rem;text-align:right;font-family:var(--font-mono);font-size:.6rem;color:var(--muted)">DATE</th>
+        <th style="padding:.4rem .6rem"></th>
+      </tr></thead>
+      <tbody>${docs.map(d=>`
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:.45rem .6rem;font-family:var(--font-mono);font-size:.72rem">${extIcon(d.ext)} ${safeText(d.filename)}</td>
+          <td style="padding:.45rem .6rem;font-family:var(--font-mono);font-size:.68rem;color:var(--muted)">${safeText(d.category)}</td>
+          <td style="padding:.45rem .6rem;font-family:var(--font-mono);font-size:.68rem;color:var(--muted);text-align:right">${d.file_size_kb}KB</td>
+          <td style="padding:.45rem .6rem;font-family:var(--font-mono);font-size:.68rem;color:var(--muted);text-align:right">${safeText((d.upload_date||'').split('T')[0])}</td>
+          <td style="padding:.45rem .6rem">
+            <div style="display:flex;gap:.35rem">
+              <a href="/api/documents/${d.id}" download="${safeText(d.filename)}" style="font-family:var(--font-mono);font-size:.62rem;padding:.2rem .45rem;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--muted);text-decoration:none">↓</a>
+              <button onclick="deleteDoc(${d.id},'${jobId}')" style="font-family:var(--font-mono);font-size:.62rem;padding:.2rem .45rem;background:none;border:1px solid var(--border);border-radius:3px;color:var(--red);cursor:pointer">✕</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>` : `<div style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">No documents uploaded yet.</div>`}`;
+  } catch(e) { body.innerHTML = `<div style="color:var(--red);font-family:var(--font-mono);font-size:.72rem">Failed to load documents.</div>`; }
+}
+
+async function uploadDocFiles(files, jobId) {
+  const msg = document.getElementById('doc-upload-msg');
+  const cat = document.getElementById('doc-cat-sel')?.value || 'Other';
+  msg.style.color='var(--muted)'; msg.textContent='Uploading…';
+  let ok=0, fail=0;
+  for (const file of files) {
+    const fd = new FormData();
+    fd.append('file', file); fd.append('job_id', jobId); fd.append('category', cat);
+    try {
+      const res = await fetch('/api/documents/upload',{method:'POST',body:fd});
+      if (res.ok) ok++; else fail++;
+    } catch(e) { fail++; }
+  }
+  msg.style.color = fail ? 'var(--amber)' : 'var(--green)';
+  msg.textContent = `✓ ${ok} uploaded${fail?`, ${fail} failed`:''}`;
+  await renderJobDocuments(jobId);
+}
+
+function handleDocDrop(event, jobId) {
+  event.preventDefault();
+  event.currentTarget.style.borderColor='var(--border)';
+  uploadDocFiles(event.dataTransfer.files, jobId);
+}
+
+async function deleteDoc(docId, jobId) {
+  if (!confirm('Delete this document?')) return;
+  await fetch(`/api/documents/${docId}`,{method:'DELETE'});
+  await renderJobDocuments(jobId);
 }
 </script>
 </body>
