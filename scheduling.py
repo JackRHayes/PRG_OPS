@@ -140,10 +140,29 @@ def delete_job_schedule(job_id: str) -> bool:
 # Auto-Assign Algorithm
 # ---------------------------------------------------------------------------
 
+# Maps keywords found in scope_type → crew skill terms to look for.
+# Allows "Service Install" to match crews with "Gas", "Water", "Electric", etc.
+_SCOPE_SKILL_MAP: dict[str, list[str]] = {
+    'repair':    ['civil', 'excavation', 'sewer', 'gas', 'water', 'gas main'],
+    'main':      ['gas main', 'water', 'civil', 'gas'],
+    'emergency': ['civil', 'gas', 'water', 'gas main', 'excavation'],
+    'service':   ['civil', 'gas', 'water', 'electric', 'fiber'],
+    'install':   ['civil', 'gas', 'water', 'electric', 'fiber'],
+    'upgrade':   ['civil', 'electric', 'fiber'],
+    'valve':     ['gas', 'water', 'gas main', 'civil'],
+    'planned':   ['civil', 'excavation'],
+}
+
+
 def auto_assign_crew(job_id: str) -> list[dict]:
     """
     Return up to 3 available crews ranked by skill match against the job scope_type.
-    Score = (skill_word_matches * 10) - (week_hours / 10)
+
+    Matching strategy:
+      1. Parse crew skills by comma so multi-word skills (e.g. "Gas Main") are preserved.
+      2. Expand scope keywords via _SCOPE_SKILL_MAP to bridge terminology gaps
+         (e.g. "Service Install" → civil, gas, water, electric, fiber).
+      3. Score = (unique skill matches * 10) - (week_hours / 10)
     """
     conn = get_db_connection()
     try:
@@ -153,7 +172,12 @@ def auto_assign_crew(job_id: str) -> list[dict]:
         if not job:
             return []
 
-        scope_words = set((job['scope_type'] or '').lower().replace(',', ' ').split())
+        # Build expanded target skill set from scope keywords
+        scope_lower = (job['scope_type'] or '').lower()
+        scope_words = set(scope_lower.replace(',', ' ').split())
+        target_skills: set[str] = set()
+        for word in scope_words:
+            target_skills.update(_SCOPE_SKILL_MAP.get(word, [word]))
 
         crews = conn.execute("""
             SELECT c.*, COALESCE(SUM(tl.hours_worked), 0) AS week_hours
@@ -166,8 +190,9 @@ def auto_assign_crew(job_id: str) -> list[dict]:
 
         scored = []
         for c in crews:
-            crew_skills = set((c['skills'] or '').lower().replace(',', ' ').split())
-            skill_match = len(scope_words & crew_skills)
+            # Parse skills by comma to preserve multi-word entries like "Gas Main"
+            crew_skills = {s.strip().lower() for s in (c['skills'] or '').split(',') if s.strip()}
+            skill_match = len(target_skills & crew_skills)
             score = (skill_match * 10) - (c['week_hours'] / 10)
             scored.append({
                 **dict(c),

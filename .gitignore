@@ -13,6 +13,12 @@ __pycache__/
 # Outputs & cache
 outputs/
 
+# Database (local only)
+oryon.db
+
+# Uploaded documents
+data/documents/
+
 # Models
 models/*.pkl
 
