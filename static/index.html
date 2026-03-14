@@ -154,7 +154,10 @@
     <div class="content">
       <div class="section-header">
         <div class="section-title">Active Job Risk Scores</div>
-        <button id="btn-export-csv" style="padding:.45rem 1rem;background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:.7rem;border-radius:5px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↓ Export CSV</button>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button id="btn-new-job" style="padding:.45rem 1rem;background:var(--accent);border:none;color:var(--bg);font-family:var(--font-mono);font-size:.7rem;font-weight:600;border-radius:5px;cursor:pointer">+ New Job</button>
+          <button id="btn-export-csv" style="padding:.45rem 1rem;background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:.7rem;border-radius:5px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↓ Export CSV</button>
+        </div>
       </div>
       <div class="table-wrap">
         <div class="filter-bar">
@@ -866,6 +869,75 @@
   </div>
 </div>
 
+<!-- NEW JOB MODAL -->
+<div id="new-job-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1010;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:580px;width:100%;max-height:90vh;overflow-y:auto">
+    <div style="padding:1.25rem 1.75rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--surface);z-index:1">
+      <div style="font-family:var(--font-mono);font-size:.75rem;font-weight:700;color:var(--text)">New Job</div>
+      <button onclick="document.getElementById('new-job-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:.9rem;padding:.3rem .6rem;border-radius:5px;line-height:1">✕</button>
+    </div>
+    <div style="padding:1.5rem 1.75rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div style="grid-column:1/-1">
+        <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Job ID <span style="color:var(--red)">*</span></label>
+        <input id="nj-job-id" type="text" placeholder="PRG-2024-0050" style="width:100%;box-sizing:border-box;padding:.5rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem">
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Contractor <span style="color:var(--red)">*</span></label>
+        <input id="nj-contractor" type="text" placeholder="Acme Utilities" style="width:100%;box-sizing:border-box;padding:.5rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem">
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Scope Type</label>
+        <select id="nj-scope" style="width:100%;box-sizing:border-box;padding:.5rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem">
+          <option value="">— Select —</option>
+          <option>Emergency Repair</option>
+          <option>Main Repair</option>
+          <option>Planned Upgrade</option>
+          <option>Service Install</option>
+          <option>Valve Replacement</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Region</label>
+        <input id="nj-region" type="text" placeholder="North Brooklyn" style="width:100%;box-sizing:border-box;padding:.5rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem">
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Status</label>
+        <select id="nj-status" style="width:100%;box-sizing:border-box;padding:.5rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem">
+          <option>In Progress</option>
+          <option>Planned</option>
+          <option>On Hold</option>
+          <option>Completed</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Crew Type</label>
+        <input id="nj-crew-type" type="text" placeholder="Union" style="width:100%;box-sizing:border-box;padding:.5rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem">
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Start Date</label>
+        <input id="nj-start" type="date" style="width:100%;box-sizing:border-box;padding:.5rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem">
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Planned End Date</label>
+        <input id="nj-end" type="date" style="width:100%;box-sizing:border-box;padding:.5rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem">
+      </div>
+      <div>
+        <label style="display:block;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem">Budget ($)</label>
+        <input id="nj-budget" type="number" min="0" placeholder="50000" style="width:100%;box-sizing:border-box;padding:.5rem .65rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.8rem">
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;padding-top:1.4rem">
+        <input id="nj-markout" type="checkbox" style="width:14px;height:14px;cursor:pointer">
+        <label for="nj-markout" style="font-family:var(--font-mono);font-size:.72rem;color:var(--text);cursor:pointer">Markout Required</label>
+      </div>
+    </div>
+    <div style="padding:0 1.75rem 1.5rem;display:flex;gap:.75rem;align-items:center">
+      <button id="nj-submit" style="padding:.55rem 1.25rem;background:var(--accent);border:none;color:var(--bg);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:.75rem;font-weight:600">Create Job</button>
+      <button onclick="document.getElementById('new-job-modal').style.display='none'" style="padding:.55rem 1.25rem;background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:.75rem">Cancel</button>
+      <span id="nj-status-msg" style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted)"></span>
+    </div>
+  </div>
+</div>
+
 <!-- EMAIL MODAL -->
 <div id="email-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;max-width:400px;width:90%">
@@ -1297,6 +1369,63 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
+// ── New Job Modal ─────────────────────────────────────────────────────────────
+document.getElementById('btn-new-job').addEventListener('click', () => {
+  // Clear the form
+  ['nj-job-id','nj-contractor','nj-region','nj-crew-type','nj-start','nj-end'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('nj-scope').value  = '';
+  document.getElementById('nj-status').value = 'In Progress';
+  document.getElementById('nj-budget').value = '';
+  document.getElementById('nj-markout').checked = false;
+  document.getElementById('nj-status-msg').textContent = '';
+  document.getElementById('new-job-modal').style.display = 'flex';
+});
+
+document.getElementById('nj-submit').addEventListener('click', async function() {
+  const jobId = document.getElementById('nj-job-id').value.trim();
+  const contractor = document.getElementById('nj-contractor').value.trim();
+  if (!jobId || !contractor) {
+    document.getElementById('nj-status-msg').textContent = '✗ Job ID and Contractor are required';
+    document.getElementById('nj-status-msg').style.color = 'var(--red)';
+    return;
+  }
+  this.textContent = 'Creating…'; this.disabled = true;
+  document.getElementById('nj-status-msg').textContent = '';
+  try {
+    const res = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        job_id:           jobId,
+        contractor:       contractor,
+        scope_type:       document.getElementById('nj-scope').value,
+        region:           document.getElementById('nj-region').value.trim(),
+        status:           document.getElementById('nj-status').value,
+        crew_type:        document.getElementById('nj-crew-type').value.trim(),
+        start_date:       document.getElementById('nj-start').value || null,
+        planned_end_date: document.getElementById('nj-end').value || null,
+        budget:           parseFloat(document.getElementById('nj-budget').value) || 0,
+        markout_required: document.getElementById('nj-markout').checked,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('nj-status-msg').textContent = '✓ Job created';
+      document.getElementById('nj-status-msg').style.color = 'var(--green)';
+      setTimeout(() => { document.getElementById('new-job-modal').style.display = 'none'; }, 900);
+    } else {
+      document.getElementById('nj-status-msg').textContent = '✗ ' + (data.error || 'Failed');
+      document.getElementById('nj-status-msg').style.color = 'var(--red)';
+    }
+  } catch(e) {
+    document.getElementById('nj-status-msg').textContent = '✗ Network error';
+    document.getElementById('nj-status-msg').style.color = 'var(--red)';
+  }
+  this.textContent = 'Create Job'; this.disabled = false;
+});
+
 // ── Job Detail Modal ─────────────────────────────────────────────────────────
 document.getElementById('jobs-tbody').addEventListener('click', e => {
   const row = e.target.closest('tr[data-job-id]');
@@ -1478,8 +1607,21 @@ function showJobModal(job) {
     </div>
   </div>`;
 
-  // Assign crew button
-  html += `<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:.75rem;flex-wrap:wrap">
+  // Status update + action buttons
+  const statusOptions = ['In Progress','Planned','On Hold','Completed'];
+  const statusOpts = statusOptions.map(s =>
+    `<option value="${s}" ${s===job.status?'selected':''}>${s}</option>`
+  ).join('');
+  html += `<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+    <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">Update Status</div>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem">
+      <select id="jm-status-select" style="padding:.4rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.75rem">${statusOpts}</select>
+      <input id="jm-actual-end" type="date" placeholder="Actual end date" style="padding:.4rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:.75rem" value="${job.actual_end_date||''}" title="Actual end date (required when marking Completed)">
+      <button id="jm-status-save" data-job-id="${job.job_id}" style="padding:.4rem .9rem;background:var(--accent);border:none;color:var(--bg);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:.72rem;font-weight:600">Save</button>
+      <span id="jm-status-msg" style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted)"></span>
+    </div>
+  </div>`;
+  html += `<div style="display:flex;gap:.75rem;flex-wrap:wrap">
     <button onclick="openAssignCrewModal('${job.job_id}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">👷 Assign Crew</button>
     <button onclick="openJobFinancials('${job.job_id}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">💰 Financials</button>
     <button onclick="openJobDocuments('${job.job_id}')" style="padding:.45rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-family:var(--font-mono);font-size:.7rem">📄 Documents</button>
@@ -1514,6 +1656,41 @@ function showJobModal(job) {
       statusEl.textContent = '✗ Save failed'; statusEl.style.color = 'var(--red)';
     }
     btn.textContent = 'Save Note'; btn.disabled = false;
+  });
+
+  // Job status save
+  document.getElementById('jm-status-save').addEventListener('click', async function() {
+    const newStatus  = document.getElementById('jm-status-select').value;
+    const actualEnd  = document.getElementById('jm-actual-end').value || null;
+    const msgEl      = document.getElementById('jm-status-msg');
+    const btn        = this;
+    btn.textContent  = 'Saving…'; btn.disabled = true;
+    const payload    = { status: newStatus };
+    if (actualEnd) payload.actual_end_date = actualEnd;
+    else if (newStatus === 'Completed' && !actualEnd) {
+      payload.actual_end_date = new Date().toISOString().split('T')[0];
+    }
+    try {
+      const res = await fetch('/api/jobs/' + btn.dataset.jobId, {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        msgEl.textContent = '✓ Status updated';
+        msgEl.style.color = 'var(--green)';
+        if (newStatus === 'Completed') {
+          msgEl.textContent += ' — crews released';
+        }
+      } else {
+        const d = await res.json();
+        msgEl.textContent = '✗ ' + (d.error || 'Update failed');
+        msgEl.style.color = 'var(--red)';
+      }
+    } catch(e) {
+      msgEl.textContent = '✗ Network error'; msgEl.style.color = 'var(--red)';
+    }
+    btn.textContent = 'Save'; btn.disabled = false;
   });
 
   // What-If details toggle chevron

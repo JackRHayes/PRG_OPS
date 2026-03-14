@@ -38,7 +38,7 @@ from email_scheduler import (
     send_weekly_email, generate_weekly_report, preview_report,
     load_config, save_config, schedule_weekly_reports, stop_scheduler,
 )
-from database import init_database, get_all_jobs, create_job
+from database import init_database, get_all_jobs, create_job, get_job, update_job
 from crew_management import (
     init_crew_tables, seed_sample_crews,
     create_crew, get_crew, get_all_crews, update_crew, delete_crew,
@@ -275,6 +275,70 @@ def database_status():
             'error': str(e),
             'status': 'not_initialized',
         }), 500
+
+
+# ---------------------------------------------------------------------------
+# JOB CRUD ROUTES
+# ---------------------------------------------------------------------------
+
+@app.route('/api/jobs', methods=['POST'])
+def create_job_route():
+    """Create a new job directly (without CSV upload)."""
+    data = request.get_json(force=True) or {}
+    job_id = (data.get('job_id') or '').strip()
+    if not job_id:
+        return jsonify({'error': 'job_id is required'}), 400
+    if get_job(job_id):
+        return jsonify({'error': f'Job {job_id} already exists'}), 409
+    ok = create_job({
+        'job_id':             job_id,
+        'contractor':         (data.get('contractor') or '').strip(),
+        'scope_type':         (data.get('scope_type') or '').strip(),
+        'region':             (data.get('region') or '').strip(),
+        'start_date':         data.get('start_date') or None,
+        'planned_end_date':   data.get('planned_end_date') or None,
+        'actual_end_date':    data.get('actual_end_date') or None,
+        'status':             (data.get('status') or 'In Progress').strip(),
+        'markout_required':   bool(data.get('markout_required', False)),
+        'markout_issues':     int(data.get('markout_issues', 0)),
+        'inspections_failed': int(data.get('inspections_failed', 0)),
+        'crew_type':          (data.get('crew_type') or '').strip(),
+        'budget':             float(data.get('budget', 0)),
+        'actual_cost':        0.0,
+        'labor_cost':         0.0,
+        'material_cost':      0.0,
+    })
+    if not ok:
+        return jsonify({'error': 'Failed to create job'}), 500
+    return jsonify(get_job(job_id)), 201
+
+
+@app.route('/api/jobs/<job_id>', methods=['PATCH'])
+def update_job_route(job_id):
+    """Update specific fields on an existing job (e.g. status, dates)."""
+    data = request.get_json(force=True) or {}
+    if not get_job(job_id):
+        return jsonify({'error': f'Job {job_id} not found'}), 404
+    ok = update_job(job_id, data)
+    if not ok:
+        return jsonify({'error': 'Update failed or no valid fields provided'}), 400
+    # When a job is marked Completed, release any crews still dispatched to it
+    if data.get('status') == 'Completed':
+        from database import get_db_connection, close_db_connection
+        conn = get_db_connection()
+        try:
+            dispatched = conn.execute(
+                "SELECT DISTINCT crew_id FROM dispatch_log WHERE job_id = ?", (job_id,)
+            ).fetchall()
+            for row in dispatched:
+                conn.execute(
+                    "UPDATE crews SET status = 'Available' WHERE id = ? AND status = 'On Job'",
+                    (row['crew_id'],)
+                )
+            conn.commit()
+        finally:
+            close_db_connection(conn)
+    return jsonify(get_job(job_id))
 
 
 # ---------------------------------------------------------------------------
