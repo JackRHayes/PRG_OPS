@@ -16,7 +16,7 @@ from datetime import date
 
 from flask import Flask, request, jsonify, send_from_directory
 
-from ingestion import load_jobs, validate_jobs
+from ingestion import load_jobs, validate_jobs, parse_date
 from schedule_analysis import enrich_jobs_with_schedule, aggregate_delays
 from compliance_analysis import calculate_compliance_metrics, identify_repeat_issue_jobs
 from contractor_scoring import calculate_contractor_scores, get_ranked_contractors
@@ -236,14 +236,71 @@ def index():
 
 @app.route('/api/last-session')
 def last_session():
+    # Load base session from the last CSV upload (may not exist yet)
+    session_data = {}
     if os.path.exists(LAST_SESSION_PATH):
         try:
             with open(LAST_SESSION_PATH) as f:
-                return app.response_class(response=f.read(), mimetype='application/json')
+                session_data = json.load(f)
         except Exception as e:
-            logger.error(f"[last-session] {e}")
+            logger.error(f"[last-session] read error: {e}")
             return jsonify({'error': 'Internal server error'}), 500
-    return jsonify({'error': 'No saved session'}), 404
+
+    # Merge in DB jobs that were created directly (not via CSV upload)
+    try:
+        db_jobs    = get_all_jobs()
+        session_ids = {j['job_id'] for j in session_data.get('all_jobs', [])}
+
+        def _prep_db_job(j: dict) -> dict:
+            """Convert string date fields to date objects for the risk pipeline."""
+            j = dict(j)
+            for field in ('start_date', 'planned_end_date', 'actual_end_date'):
+                val = j.get(field)
+                j[field] = parse_date(str(val)) if val else None
+            return j
+
+        new_jobs = [_prep_db_job(j) for j in db_jobs if j['job_id'] not in session_ids]
+
+        if new_jobs:
+            new_jobs     = enrich_jobs_with_schedule(new_jobs)
+            all_jobs     = session_data.get('all_jobs', []) + new_jobs
+            c_scores     = calculate_contractor_scores(all_jobs)
+            scored_jobs  = score_active_jobs(all_jobs, c_scores)
+            ranked       = get_ranked_contractors(c_scores)
+
+            completed = [j for j in all_jobs if j.get('status') == 'Completed']
+            active    = [j for j in all_jobs if j.get('status') in ('Open', 'In Progress')]
+            avg_delay = round(sum(j.get('delay_days', 0) for j in completed) / len(completed), 1) if completed else 0
+            high = [j for j in scored_jobs if j['risk_level'] == 'HIGH']
+            med  = [j for j in scored_jobs if j['risk_level'] == 'MEDIUM']
+            low  = [j for j in scored_jobs if j['risk_level'] == 'LOW']
+
+            session_data.update({
+                'all_jobs':           all_jobs,
+                'scored_jobs':        scored_jobs,
+                'ranked_contractors': ranked,
+                'summary': {
+                    **(session_data.get('summary') or {}),
+                    'total_jobs':        len(all_jobs),
+                    'active_jobs':       len(active),
+                    'completed_jobs':    len(completed),
+                    'avg_delay_days':    avg_delay,
+                    'high_risk_count':   len(high),
+                    'medium_risk_count': len(med),
+                    'low_risk_count':    len(low),
+                },
+            })
+    except Exception as e:
+        logger.error(f"[last-session] DB merge error: {e}")
+        # Non-fatal — fall through and return whatever we have
+
+    if not session_data:
+        return jsonify({'error': 'No saved session'}), 404
+
+    return app.response_class(
+        response=json.dumps(session_data, default=serialize),
+        mimetype='application/json',
+    )
 
 
 @app.route('/api/prev-session')
